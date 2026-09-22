@@ -216,22 +216,22 @@ function renderGw() {
     (margin ? `, ${margin} clear of ${esc(rows[1].team)}` : "") +
     `. <b>GW</b> is that week; <b>Season</b> is the running total.`;
 
-  let t = `<table><thead><tr><th>#</th><th>Team</th>${HAS_NAMES ? "<th>Manager</th>" : ""}
-    <th class="r">GW</th><th class="r">Season</th><th class="r">Hit</th>
-    <th class="r">Bench</th><th>Captain</th><th class="r">C pts</th></tr></thead><tbody>`;
+  let t = `<table><thead><tr><th>#</th><th>Team</th>${HAS_NAMES ? '<th class="col-opt">Manager</th>' : ""}
+    <th class="r">GW</th><th class="r col-opt">Season</th><th class="r col-opt">Hit</th>
+    <th class="r col-opt">Bench</th><th>Captain</th><th class="r">C pts</th></tr></thead><tbody>`;
   rows.forEach(r => {
     const cap = P[r.captain];
     t += `<tr class="${r.entry === ME ? "me" : ""}">
       <td class="rank num">${r.place}</td>
       <td class="team">${esc(r.team)}${r.place === 1 ? ' <span class="badge win">win</span>' : ""}
         ${r.chip ? `<span class="badge alt">${esc(r.chip)}</span>` : ""}</td>
-      ${HAS_NAMES ? `<td style="color:var(--ink-3)">${esc(r.manager)}</td>` : ""}
+      ${HAS_NAMES ? `<td class="col-opt" style="color:var(--ink-3)">${esc(r.manager)}</td>` : ""}
       <td class="r num" style="font-weight:700">${r.points}</td>
-      <td class="r num" style="color:var(--ink-2)">${totals[r.entry] ?? "-"}</td>
-      <td class="r num ${r.hit ? "neg" : "zero"}">${r.hit ? "&minus;" + r.hit : "-"}</td>
-      <td class="r num ${r.bench >= 10 ? "neg" : "zero"}">${r.bench}</td>
+      <td class="r num col-opt" style="color:var(--ink-2)">${totals[r.entry] ?? "-"}</td>
+      <td class="r num col-opt ${r.hit ? "neg" : "zero"}">${r.hit ? "&minus;" + r.hit : "-"}</td>
+      <td class="r num col-opt ${r.bench >= 10 ? "alert" : "zero"}">${r.bench}</td>
       <td>${cap ? esc(cap.name) : "-"}</td>
-      <td class="r num ${r.captainPoints === 0 ? "neg" : ""}">${r.captainPoints}</td>
+      <td class="r num ${r.captainPoints === 0 ? "alert" : ""}">${r.captainPoints}</td>
     </tr>`;
   });
   $("gw-table").innerHTML = t + `</tbody></table>`;
@@ -329,17 +329,17 @@ seg.addEventListener("click", e => {
 function renderPicks() {
   const list = D.suggestions[activePos] || [];
   let t = `<table><thead><tr><th>Player</th><th>Club</th><th class="r">&pound;m</th>
-    <th class="r">Form</th><th class="r">xGI/90</th><th class="r">FDR</th>
-    <th class="r">Owned</th></tr></thead><tbody>`;
+    <th class="r">Form</th><th class="r col-opt">xGI/90</th><th class="r">FDR</th>
+    <th class="r col-opt">Owned</th></tr></thead><tbody>`;
   list.forEach(p => {
     const band = p.fdr <= 2.6 ? "easy" : p.fdr >= 3.6 ? "hard" : "mid";
     t += `<tr><td class="team">${esc(p.name)}</td>
       <td style="color:var(--ink-3)">${esc(p.team)}</td>
       <td class="r num">${p.price.toFixed(1)}</td>
       <td class="r num" style="font-weight:600">${p.form.toFixed(1)}</td>
-      <td class="r num">${p.xgi90.toFixed(2)}</td>
+      <td class="r num col-opt">${p.xgi90.toFixed(2)}</td>
       <td class="r"><span class="fdr ${band}">${p.fdr.toFixed(1)}</span></td>
-      <td class="r num" style="color:var(--ink-3)">${p.owned.toFixed(1)}%</td></tr>`;
+      <td class="r num col-opt" style="color:var(--ink-3)">${p.owned.toFixed(1)}%</td></tr>`;
   });
   $("pick-table").innerHTML = t + `</tbody></table>`;
   $("pick-caption").innerHTML =
@@ -397,14 +397,14 @@ function renderMoney() {
     <div class="v money ${t.cls || ""}">${t.v}</div><div class="n">${t.n}</div></div>`).join("");
 
   const canPay = mode === "shared" || mode === "local";
-  let t = `<table><thead><tr><th>GW</th><th>Winner</th><th class="r">Score</th>
+  let t = `<table><thead><tr><th>GW</th><th>Winner</th><th class="r col-opt">Score</th>
     <th class="r">Amount</th><th>Status</th></tr></thead><tbody>`;
   PAY_LINES.forEach(l => {
     const paid = paidIds.has(l.id);
     t += `<tr class="${l.entry === ME ? "me" : ""}">
       <td class="rank num">${l.gw}</td>
       <td class="team">${esc(l.team)}${l.tied ? ' <span class="badge alt">split</span>' : ""}</td>
-      <td class="r num">${l.points}</td>
+      <td class="r num col-opt">${l.points}</td>
       <td class="r krw">${krw(l.amount)}</td>
       <td><button class="btn sm pay ${paid ? "on" : ""}" data-id="${l.id}"
         ${canPay ? "" : "disabled"} type="button">${paid ? "Paid" : "Mark paid"}</button></td>
@@ -437,14 +437,14 @@ function renderMoney() {
     `${krw(Z.weeklyRemaining)} KRW is still to play for week by week.
      These are today's positions, not results.`;
 
-  let m = `<table><thead><tr><th>Pos</th><th>Team</th><th class="r">Won so far</th>
-    <th class="r">If frozen</th><th class="r">Projected</th>
+  let m = `<table><thead><tr><th>Pos</th><th>Team</th><th class="r col-opt">Won so far</th>
+    <th class="r col-opt">If frozen</th><th class="r">Projected</th>
     <th class="r">Net of entry</th></tr></thead><tbody>`;
   Z.rows.forEach(r => {
     m += `<tr class="${r.entry === ME ? "me" : ""}">
       <td class="rank num">${r.rank}</td><td class="team">${esc(r.team)}</td>
-      <td class="r krw">${r.banked ? krw(r.banked) : "-"}</td>
-      <td class="r krw" style="color:var(--ink-3)">${r.provisional ? krw(r.provisional) : "-"}</td>
+      <td class="r krw col-opt">${r.banked ? krw(r.banked) : "-"}</td>
+      <td class="r krw col-opt" style="color:var(--ink-3)">${r.provisional ? krw(r.provisional) : "-"}</td>
       <td class="r krw" style="font-weight:700">${krw(r.projected)}</td>
       <td class="r krw" style="color:${r.net >= 0 ? "var(--good)" : "var(--ink-3)"}">
         ${r.net >= 0 ? "+" : "&minus;"}${krw(Math.abs(r.net))}</td></tr>`;
@@ -606,3 +606,61 @@ renderGw();
 renderUpcoming();
 renderPicks();
 renderMoney();
+
+/* ---------------- install as an app ---------------- */
+// A manifest lets a phone add this to the home screen and open it without
+// browser chrome. Built at runtime so the page stays a single file.
+(function manifest() {
+  const icon =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">' +
+    '<rect width="192" height="192" rx="42" fill="#16181D"/>' +
+    '<path d="M54 38h84v58a42 42 0 0 1-42 42 42 42 0 0 1-42-42z" fill="#ED1C24"/>' +
+    '<path d="M54 84h84v12a42 42 0 0 1-42 42 42 42 0 0 1-42-42z" fill="#16181D"/></svg>';
+  const src = "data:image/svg+xml," + encodeURIComponent(icon);
+  const doc = {
+    name: D.league.name + " Board",
+    short_name: "GME Fantasy",
+    start_url: ".", scope: ".", display: "standalone", orientation: "portrait-primary",
+    background_color: "#F5F6F8", theme_color: "#ED1C24",
+    icons: [{ src, sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+  };
+  try {
+    const link = $("app-manifest");
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(doc)],
+      { type: "application/manifest+json" }));
+    const apple = document.createElement("link");
+    apple.rel = "apple-touch-icon"; apple.href = src;
+    document.head.appendChild(apple);
+  } catch (e) { /* manifests are a nicety, never a requirement */ }
+})();
+
+/* ---------------- keyboard shortcuts ---------------- */
+const keysDialog = $("keys");
+$("keys-btn").addEventListener("click", () => keysDialog.showModal());
+keysDialog.addEventListener("click", e => { if (e.target === keysDialog) keysDialog.close(); });
+
+function stepGameweek(delta) {
+  const onPlanning = !$("tab-planning").hidden;
+  const list = onPlanning ? UP : GWS;
+  const current = onPlanning ? activeUp : activeGw;
+  const next = list[Math.min(list.length - 1, Math.max(0, list.indexOf(current) + delta))];
+  if (next === current) return;
+  const bar = onPlanning ? upChips : gwChips;
+  const btn = bar.querySelector(`[data-gw="${next}"]`);
+  if (btn) btn.click();
+}
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const el = document.activeElement;
+  if (el && el.matches("input, textarea, select")) return;
+  if (keysDialog.open && e.key !== "?") return;   // Esc is handled by the dialog
+
+  const k = e.key;
+  if (k >= "1" && k <= String(TABS.length)) { showTab(TABS[+k - 1].id); e.preventDefault(); }
+  else if (k === "?") { keysDialog.open ? keysDialog.close() : keysDialog.showModal(); e.preventDefault(); }
+  else if (k === "ArrowLeft") { stepGameweek(-1); e.preventDefault(); }
+  else if (k === "ArrowRight") { stepGameweek(1); e.preventDefault(); }
+  else if (k === "c" || k === "C") { showTab("planning"); $("copy-btn").click(); e.preventDefault(); }
+  else if (k === "e" || k === "E") { showTab("money"); $("xlsx-btn").click(); e.preventDefault(); }
+});

@@ -1,188 +1,218 @@
 <title>GME Fantasy Board</title>
+<meta name="theme-color" content="#ED1C24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GME Fantasy">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" id="app-manifest">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
+/* ---------------------------------------------------------------
+   Palette. GME red is an IDENTITY colour: the mark, the active tab,
+   your own team. It is deliberately not used for every negative
+   number, or it would stop meaning anything. See docs/DESIGN.md.
+   --------------------------------------------------------------- */
 :root{
   color-scheme: light;
-  --ground:#F4F4EF; --surface:#FCFCFA; --surface-2:#ECECE3; --raise:#FFFFFF;
-  --ink:#14170F; --ink-2:#575C4E; --ink-3:#8B907F;
-  --line:#E3E3D8; --line-2:#CFCFC1;
-  --s1:#B5650A; --s2:#00836A; --s3:#2F55C9; --s4:#A83246;
-  --good:#00836A; --bad:#A83246;
+  --ground:#F5F6F8; --surface:#FFFFFF; --surface-2:#EFF1F4; --sunken:#F8F9FB;
+  --ink:#16181D; --ink-2:#545963; --ink-3:#8A909C;
+  --line:#E4E7EC; --line-2:#CFD4DC;
+  --brand:#ED1C24; --brand-wash:rgba(237,28,36,.07); --brand-edge:rgba(237,28,36,.28);
+  --s1:#ED1C24; --s2:#1F6FD0; --s3:#0F7B4F;
+  --good:#0F7B4F; --warn:#B4700A; --bad:#C8151C;
+  --shadow:0 1px 2px rgba(22,24,29,.05), 0 1px 3px rgba(22,24,29,.04);
+  --shadow-lift:0 4px 16px rgba(22,24,29,.10);
+  --r:10px; --r-sm:7px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme: dark;
-    --ground:#0B0D08; --surface:#12150F; --surface-2:#1B1F16; --raise:#171B13;
-    --ink:#F1F2EB; --ink-2:#A8AD9B; --ink-3:#717766;
-    --line:#242820; --line-2:#363C2D;
-    --s1:#C87C12; --s2:#1F9276; --s3:#5B80E4; --s4:#CE5870;
-    --good:#1F9276; --bad:#CE5870;
+    --ground:#0E1013; --surface:#16181D; --surface-2:#1E2128; --sunken:#121419;
+    --ink:#EDEFF3; --ink-2:#A2A9B6; --ink-3:#6C7381;
+    --line:#252932; --line-2:#39404D;
+    --brand:#F0575D; --brand-wash:rgba(240,87,93,.10); --brand-edge:rgba(240,87,93,.34);
+    --s1:#F0575D; --s2:#5B90EE; --s3:#2E9E6B;
+    --good:#2E9E6B; --warn:#D9A03A; --bad:#F0575D;
+    --shadow:none; --shadow-lift:0 6px 22px rgba(0,0,0,.45);
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --ground:#0B0D08; --surface:#12150F; --surface-2:#1B1F16; --raise:#171B13;
-  --ink:#F1F2EB; --ink-2:#A8AD9B; --ink-3:#717766;
-  --line:#242820; --line-2:#363C2D;
-  --s1:#C87C12; --s2:#1F9276; --s3:#5B80E4; --s4:#CE5870;
-  --good:#1F9276; --bad:#CE5870;
+  --ground:#0E1013; --surface:#16181D; --surface-2:#1E2128; --sunken:#121419;
+  --ink:#EDEFF3; --ink-2:#A2A9B6; --ink-3:#6C7381;
+  --line:#252932; --line-2:#39404D;
+  --brand:#F0575D; --brand-wash:rgba(240,87,93,.10); --brand-edge:rgba(240,87,93,.34);
+  --s1:#F0575D; --s2:#5B90EE; --s3:#2E9E6B;
+  --good:#2E9E6B; --warn:#D9A03A; --bad:#F0575D;
+  --shadow:none; --shadow-lift:0 6px 22px rgba(0,0,0,.45);
 }
 
 *{box-sizing:border-box}
+html,body{overflow-x:hidden}
 body{background:var(--ground); color:var(--ink);
-  font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-size:15px; line-height:1.5;
-  -webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+  font-family:Archivo,"Helvetica Neue",-apple-system,Arial,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.021em; text-wrap:balance}
 .num,.krw{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
 .eyebrow{font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
 .wrap{max-width:1060px; margin:0 auto; padding-inline:16px}
 
-/* ---------- header ---------- */
-.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
-  background:var(--ground); border-bottom:1px solid var(--line)}
-.top-row{max-width:1060px; margin:0 auto; padding:14px 16px 0;
-  display:flex; align-items:center; gap:14px; justify-content:space-between; flex-wrap:wrap}
-.brand{display:flex; align-items:center; gap:11px; min-width:0}
-.crest{width:30px; height:35px; flex:none; border-radius:3px 3px 13px 13px;
-  background:linear-gradient(175deg,var(--s1) 0 46%, var(--ink) 46% 100%)}
-.brand h1{font-size:17px; font-weight:800}
-.brand p{margin:1px 0 0; font-size:12px; color:var(--ink-3)}
-.clock-box{text-align:right}
-.clock-box .eyebrow{display:block}
-.clock-box .t{font-size:17px; font-weight:700; letter-spacing:0}
+/* ---------------- header ---------------- */
+.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:saturate(1.6) blur(10px); border-bottom:1px solid var(--line)}
+.top-row{max-width:1060px; margin:0 auto; padding:12px 16px 0;
+  display:flex; align-items:center; gap:12px; justify-content:space-between}
+.brand{display:flex; align-items:center; gap:10px; min-width:0}
+.crest{width:28px; height:33px; flex:none; border-radius:4px 4px 14px 14px;
+  background:linear-gradient(170deg,var(--brand) 0 44%, var(--ink) 44% 100%)}
+.brand h1{font-size:16.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.brand p{margin:1px 0 0; font-size:11.5px; color:var(--ink-3)}
+.head-right{display:flex; align-items:center; gap:10px; flex:none}
+.clock-box{text-align:right; line-height:1.25}
+.clock-box .eyebrow{display:block; font-size:9.5px}
+.clock-box .t{font-size:16px; font-weight:700}
+.icon-btn{width:32px; height:32px; display:none; place-items:center; flex:none;
+  border:1px solid var(--line-2); background:var(--surface); color:var(--ink-3);
+  border-radius:var(--r-sm); cursor:pointer; font:600 13px/1 Archivo,sans-serif}
+.icon-btn:hover{color:var(--ink); border-color:var(--ink-3)}
+@media (hover:hover) and (pointer:fine){ .icon-btn{display:grid} }
 
-/* tabs */
-nav.tabs{max-width:1060px; margin:0 auto; padding:0 16px; display:flex; gap:2px; overflow-x:auto}
-nav.tabs button{
-  appearance:none; background:none; border:0; cursor:pointer; white-space:nowrap;
+nav.tabs{max-width:1060px; margin:0 auto; padding:0 8px; display:flex; gap:0;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{appearance:none; background:none; border:0; cursor:pointer; white-space:nowrap;
   font:600 13.5px/1 Archivo,sans-serif; color:var(--ink-3);
-  padding:14px 14px 13px; border-bottom:2px solid transparent; margin-bottom:-1px;
-}
+  padding:14px 14px 12px; border-bottom:2px solid transparent; margin-bottom:-1px;
+  min-height:44px; transition:color .12s}
 nav.tabs button:hover{color:var(--ink)}
-nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--s1)}
-nav.tabs button:focus-visible{outline:2px solid var(--s1); outline-offset:-4px; border-radius:3px}
+nav.tabs button[aria-selected="true"]{color:var(--brand); border-bottom-color:var(--brand)}
+nav.tabs button:focus-visible{outline:2px solid var(--brand); outline-offset:-4px; border-radius:6px}
 
-/* ---------- layout ---------- */
-main{padding-block:30px 64px}
-section.block{margin-bottom:38px}
-section.block:last-child{margin-bottom:0}
-.block > header{margin-bottom:14px}
+/* ---------------- layout ---------------- */
+main{padding-block:26px 56px}
+section.block{margin-bottom:34px}
+section.block:last-of-type{margin-bottom:0}
+.block > header{margin-bottom:13px}
 .block > header h2{font-size:17px}
 .block > header p{margin:4px 0 0; font-size:13px; color:var(--ink-2); max-width:66ch}
-.head-row{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.head-row{display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap}
 
-.card{background:var(--surface); border:1px solid var(--line); border-radius:8px}
+.card{background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r); box-shadow:var(--shadow)}
 .card.pad{padding:18px 20px}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:24px}
-@media (max-width:860px){ .grid2{grid-template-columns:1fr} }
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px}
 
-/* ---------- standing ---------- */
-.standing{display:flex; flex-wrap:wrap; align-items:center; gap:14px 30px;
-  padding:20px 22px; border-left:3px solid var(--s1)}
-.standing .pos{font-size:46px; font-weight:800; line-height:.95; letter-spacing:-.045em}
-.standing .pos sup{font-size:16px; font-weight:600; margin-left:2px}
-.standing .who{flex:1 1 210px; min-width:0}
-.standing .who h2{font-size:21px; font-weight:800}
+/* ---------------- standing ---------------- */
+.standing{display:flex; flex-wrap:wrap; align-items:center; gap:14px 28px;
+  padding:20px 22px; border-left:3px solid var(--brand)}
+.standing .pos{font-size:44px; font-weight:800; line-height:.95; letter-spacing:-.045em}
+.standing .pos sup{font-size:15px; font-weight:600; margin-left:2px}
+.standing .who{flex:1 1 200px; min-width:0}
+.standing .who h2{font-size:20px; font-weight:800}
 .standing .who p{margin:3px 0 0; color:var(--ink-2); font-size:13px}
-.standing .verdict{flex:1 1 280px; font-size:13px; color:var(--ink-2); line-height:1.55}
+.standing .verdict{flex:1 1 270px; font-size:13px; color:var(--ink-2); line-height:1.55}
 .standing .verdict b{color:var(--ink); font-weight:600}
 
-/* ---------- stat grid ---------- */
-.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(142px,1fr)); gap:1px;
-  background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+/* ---------------- stat grid ---------------- */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden; box-shadow:var(--shadow)}
 .stat{background:var(--surface); padding:14px 16px 15px}
-.stat .k{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
-.stat .v{font-size:26px; font-weight:800; line-height:1.2; margin-top:6px; letter-spacing:-.035em}
+.stat .k{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.stat .v{font-size:25px; font-weight:800; line-height:1.2; margin-top:6px; letter-spacing:-.035em}
 .stat .n{font-size:11.5px; color:var(--ink-3); margin-top:2px}
-.stat .v.good{color:var(--good)} .stat .v.bad{color:var(--bad)}
-.stat .v.money{font-family:Archivo,"Helvetica Neue",Arial,sans-serif; letter-spacing:-.035em}
+.stat .v.good{color:var(--good)} .stat .v.bad{color:var(--brand)}
+.stat .v.money{font-family:Archivo,sans-serif; letter-spacing:-.04em}
 
-/* ---------- tables ---------- */
-.scroll{overflow-x:auto; overscroll-behavior-x:contain}
-table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:520px}
-th{text-align:left; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+/* ---------------- tables ---------------- */
+.scroll{overflow-x:auto; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th{text-align:left; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
   color:var(--ink-3); font-weight:600; padding:12px 12px 9px; white-space:nowrap;
   border-bottom:1px solid var(--line)}
 th.r,td.r{text-align:right}
-td{padding:10px 12px; border-bottom:1px solid var(--line)}
+td{padding:11px 12px; border-bottom:1px solid var(--line)}
 tbody tr:last-child td{border-bottom:0}
-tr.me td{background:color-mix(in srgb,var(--s1) 8%,transparent)}
-tr.me td:first-child{box-shadow:inset 3px 0 0 var(--s1)}
+tr.me td{background:var(--brand-wash)}
+tr.me td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 td.team{font-weight:600; white-space:nowrap}
-td.rank{color:var(--ink-3); width:38px}
-.neg{color:var(--bad)} .zero{color:var(--ink-3)}
+td.rank{color:var(--ink-3); width:36px}
+/* A minus sign already says negative; red is reserved for the brand. */
+.neg{color:var(--ink-2)} .zero{color:var(--ink-3)}
+.alert{color:var(--brand); font-weight:600}
 .badge{display:inline-block; font:600 9.5px/1.7 "IBM Plex Mono",monospace; letter-spacing:.07em;
-  padding:0 5px; border-radius:2px; text-transform:uppercase; vertical-align:1px}
-.badge.win{background:var(--good); color:var(--surface)}
-.badge.alt{background:var(--s3); color:#fff}
+  padding:0 5px; border-radius:3px; text-transform:uppercase; vertical-align:1px}
+.badge.win{background:var(--good); color:#fff}
+.badge.alt{background:var(--s2); color:#fff}
 
-/* ---------- controls ---------- */
+/* ---------------- controls ---------------- */
 .chips{display:flex; gap:5px; flex-wrap:wrap}
 .chip,.btn{font:600 12.5px/1 Archivo,sans-serif; border:1px solid var(--line-2);
-  background:var(--surface); color:var(--ink-2); border-radius:6px; cursor:pointer;
-  padding:8px 12px; transition:.12s}
+  background:var(--surface); color:var(--ink-2); border-radius:var(--r-sm); cursor:pointer;
+  padding:0 13px; min-height:38px; display:inline-flex; align-items:center; transition:.12s}
 .chip:hover,.btn:hover{color:var(--ink); border-color:var(--ink-3)}
-.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--ground)}
+.chip[aria-pressed="true"]{background:var(--brand); border-color:var(--brand); color:#fff}
 .btn{color:var(--ink)}
-.btn.sm{padding:5px 10px; font-size:11.5px}
+.btn.sm{min-height:30px; padding:0 11px; font-size:11.5px}
 .btn:disabled{opacity:.45; cursor:not-allowed}
-.btn.on{background:var(--good); border-color:var(--good); color:var(--surface)}
-.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
-.seg{display:inline-flex; border:1px solid var(--line-2); border-radius:6px; overflow:hidden}
-.seg button{font:600 12px/1 Archivo,sans-serif; padding:8px 13px; background:var(--surface);
+.btn.on{background:var(--good); border-color:var(--good); color:#fff}
+.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.seg{display:inline-flex; border:1px solid var(--line-2); border-radius:var(--r-sm); overflow:hidden}
+.seg button{font:600 12px/1 Archivo,sans-serif; padding:0 14px; min-height:38px; background:var(--surface);
   color:var(--ink-3); border:0; border-right:1px solid var(--line-2); cursor:pointer}
 .seg button:last-child{border-right:0}
-.seg button[aria-pressed="true"]{background:var(--ink); color:var(--ground)}
-.seg button:focus-visible{outline:2px solid var(--s1); outline-offset:-3px}
+.seg button[aria-pressed="true"]{background:var(--brand); color:#fff}
+.seg button:focus-visible{outline:2px solid var(--brand); outline-offset:-3px}
 
-/* ---------- chart ---------- */
-.chart-scroll{overflow-x:auto}
-.chart-scroll svg{display:block; min-width:580px; width:100%; height:auto}
+/* ---------------- chart ---------------- */
+.chart-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.chart-scroll svg{display:block; min-width:560px; width:100%; height:auto}
 .bump-line{fill:none; stroke-linecap:round; stroke-linejoin:round; transition:opacity .12s}
-.bump-hit{fill:none; stroke:transparent; stroke-width:16; cursor:pointer}
-.dim .bump-line{opacity:.25}
+.bump-hit{fill:none; stroke:transparent; stroke-width:18; cursor:pointer}
+.dim .bump-line{opacity:.22}
 .dim .bump-line.on{opacity:1}
 .tipwrap{position:relative}
 .tip{position:absolute; pointer-events:none; opacity:0; transform:translate(-50%,-115%);
-  background:var(--ink); color:var(--ground); padding:7px 10px; border-radius:5px;
-  font-size:12px; white-space:nowrap; transition:opacity .1s; z-index:5}
+  background:var(--ink); color:var(--surface); padding:7px 10px; border-radius:var(--r-sm);
+  font-size:12px; white-space:nowrap; transition:opacity .1s; z-index:5; box-shadow:var(--shadow-lift)}
 .tip.on{opacity:1}
-.legend{display:flex; gap:15px; flex-wrap:wrap; font-size:12px; color:var(--ink-3); align-items:center}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-3); align-items:center}
 .legend i{display:inline-block; width:13px; height:3px; border-radius:2px; margin-right:6px; vertical-align:middle}
 
-/* ---------- bars ---------- */
+/* ---------------- bars ---------------- */
 .bars{display:flex; flex-direction:column; gap:8px}
-.bar-row{display:grid; grid-template-columns:minmax(80px,148px) 1fr 40px; align-items:center;
-  gap:12px; font-size:13px}
+.bar-row{display:grid; grid-template-columns:minmax(78px,140px) 1fr 38px; align-items:center;
+  gap:11px; font-size:13px}
 .bar-row .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500}
-.bar-track{display:block; height:14px; background:var(--surface-2); border-radius:0 3px 3px 0}
+.bar-track{display:block; height:13px; background:var(--surface-2); border-radius:0 3px 3px 0}
 .bar-fill{display:block; height:100%; background:var(--s2); border-radius:0 4px 4px 0; min-width:3px}
-.bar-row.me .bar-fill{background:var(--s1)}
-.bar-row.me .nm{color:var(--s1); font-weight:600}
+.bar-row.me .bar-fill{background:var(--brand)}
+.bar-row.me .nm{color:var(--brand); font-weight:700}
 .bar-row .val{text-align:right; font-weight:600}
 
-/* ---------- fixtures ---------- */
-.fixtures{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:1px;
-  background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden}
-.fx{background:var(--surface); padding:10px 13px; display:flex; align-items:center; gap:9px;
+/* ---------------- fixtures ---------------- */
+.fixtures{display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:1px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden; box-shadow:var(--shadow)}
+.fx{background:var(--surface); padding:11px 13px; display:flex; align-items:center; gap:8px;
   font-size:13px; box-shadow:0 0 0 1px var(--line)}
-.fx .ko{font:500 10.5px/1.5 "IBM Plex Mono",monospace; color:var(--ink-3); width:80px; flex:none}
+.fx .ko{font:500 10.5px/1.5 "IBM Plex Mono",monospace; color:var(--ink-3); width:76px; flex:none}
 .fx .tm{font-weight:600}
 .fx .v{color:var(--ink-3); font-size:11px}
-.fdr-key{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:12px;
+.fdr{display:inline-block; min-width:22px; text-align:center;
+  font:500 11px/1.75 "IBM Plex Mono",monospace; border-radius:4px; padding:0 4px; border:1px solid}
+.fdr.easy{color:var(--good); border-color:color-mix(in srgb,var(--good) 38%,transparent);
+  background:color-mix(in srgb,var(--good) 9%,transparent)}
+.fdr.mid{color:var(--ink-3); border-color:var(--line-2)}
+.fdr.hard{color:var(--bad); border-color:var(--brand-edge); background:var(--brand-wash)}
+.fdr-key{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px;
   font-size:12px; color:var(--ink-3)}
 .fdr-key .lbl{font-weight:600; color:var(--ink-2)}
 .fdr-key i{font-style:normal; margin-right:3px}
-.fdr{display:inline-block; min-width:22px; text-align:center;
-  font:500 11px/1.7 "IBM Plex Mono",monospace; border-radius:3px; padding:0 4px; border:1px solid}
-.fdr.easy{color:var(--good); border-color:color-mix(in srgb,var(--good) 40%,transparent);
-  background:color-mix(in srgb,var(--good) 9%,transparent)}
-.fdr.mid{color:var(--ink-3); border-color:var(--line-2)}
-.fdr.hard{color:var(--bad); border-color:color-mix(in srgb,var(--bad) 40%,transparent);
-  background:color-mix(in srgb,var(--bad) 9%,transparent)}
 
-/* ---------- lists ---------- */
+/* ---------------- lists ---------------- */
 .dlist{list-style:none; margin:0; padding:0}
 .dlist li{display:flex; align-items:baseline; gap:9px; padding:9px 0;
   border-bottom:1px solid var(--line); font-size:13.5px}
@@ -191,38 +221,85 @@ td.rank{color:var(--ink-3); width:38px}
 .dlist .pos{font-size:9.5px; letter-spacing:.07em; color:var(--ink-3); border:1px solid var(--line-2);
   padding:1px 4px; border-radius:3px; text-transform:uppercase}
 .dlist .club{font-size:11.5px; color:var(--ink-3)}
-.subhead{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
+.subhead{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
   font-weight:600; margin:0 0 8px}
 .empty{color:var(--ink-3); font-size:13px; font-style:italic; padding:6px 0; margin:0}
-.note{font-size:12.5px; color:var(--ink-3); margin:14px 0 0}
+.note{font-size:12.5px; color:var(--ink-3); margin:13px 0 0}
 
-/* ---------- misc ---------- */
-pre.msg{background:var(--surface-2); border:1px solid var(--line); border-radius:6px;
+/* ---------------- misc ---------------- */
+pre.msg{background:var(--sunken); border:1px solid var(--line); border-radius:var(--r);
   padding:14px 16px; font:400 12px/1.65 "IBM Plex Mono",monospace; overflow-x:auto;
-  white-space:pre; margin:10px 0 0; color:var(--ink); max-height:320px; overflow-y:auto}
-.warn{border-left:3px solid var(--s1); background:color-mix(in srgb,var(--s1) 7%,transparent);
-  padding:12px 15px; border-radius:0 6px 6px 0; font-size:13px; margin-top:16px}
-.awards{display:grid; grid-template-columns:repeat(auto-fit,minmax(196px,1fr)); gap:1px;
-  background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+  white-space:pre; margin:10px 0 0; color:var(--ink); max-height:330px; overflow-y:auto}
+.warn{border-left:3px solid var(--brand); background:var(--brand-wash);
+  padding:12px 15px; border-radius:0 var(--r-sm) var(--r-sm) 0; font-size:13px; margin-top:16px}
+.awards{display:grid; grid-template-columns:repeat(auto-fit,minmax(192px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:var(--r);
+  overflow:hidden; box-shadow:var(--shadow)}
 .award{background:var(--surface); padding:12px 14px}
-.award .t{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.award .t{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
 .award .h{font-size:14px; font-weight:600; margin-top:5px}
 .award .d{font-size:12px; color:var(--ink-3); margin-top:1px}
 details{margin-top:16px}
-summary{cursor:pointer; color:var(--ink-3); font-size:12.5px; padding:5px 0}
-summary:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
-footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--line);
-  font-size:12px; color:var(--ink-3); display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between}
+summary{cursor:pointer; color:var(--ink-3); font-size:12.5px; padding:6px 0; min-height:32px}
+summary:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+footer{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:12px; color:var(--ink-3); display:flex; gap:14px; flex-wrap:wrap; justify-content:space-between}
 code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--surface-2);
   padding:2px 6px; border-radius:4px}
-@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
-@media (max-width:600px){
-  .standing{padding:16px 18px}
-  .standing .pos{font-size:38px}
-  .standing .verdict{flex-basis:100%; border-top:1px solid var(--line); padding-top:12px}
-  main{padding-block:22px 48px}
-  section.block{margin-bottom:30px}
+
+/* ---------------- shortcuts sheet ---------------- */
+dialog#keys{border:1px solid var(--line); border-radius:var(--r); padding:0; max-width:340px;
+  width:calc(100% - 32px); background:var(--surface); color:var(--ink); box-shadow:var(--shadow-lift)}
+dialog#keys::backdrop{background:rgba(10,12,16,.45)}
+dialog#keys .kh{padding:15px 18px 12px; border-bottom:1px solid var(--line); font-weight:700}
+dialog#keys ul{list-style:none; margin:0; padding:10px 18px 16px}
+dialog#keys li{display:flex; justify-content:space-between; gap:16px; padding:7px 0; font-size:13px}
+dialog#keys li span{color:var(--ink-2)}
+kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
+  border:1px solid var(--line-2); border-bottom-width:2px; border-radius:5px;
+  padding:1px 6px; color:var(--ink)}
+
+/* =================== MOBILE =================== */
+@media (max-width:860px){ .grid2{grid-template-columns:1fr; gap:0} .grid2 > .card + .card{margin-top:18px} }
+@media (max-width:640px){
+  body{font-size:14.5px}
+  .wrap{padding-inline:14px}
+  main{padding-block:18px 44px}
+  section.block{margin-bottom:26px}
+  .brand p{display:none}
+  .brand h1{font-size:15px}
+  .clock-box .t{font-size:14.5px}
+  nav.tabs button{padding:13px 12px 11px; font-size:13px}
+  .standing{padding:16px 17px; gap:12px 18px}
+  .standing .pos{font-size:36px}
+  .standing .who h2{font-size:18px}
+  .standing .verdict{flex-basis:100%; border-top:1px solid var(--line); padding-top:12px; font-size:12.5px}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{padding:12px 14px 13px}
+  .stat .v{font-size:22px}
+  .card.pad{padding:15px 15px}
+  .block > header h2{font-size:16px}
+  .block > header p{font-size:12.5px}
+  .fixtures{grid-template-columns:1fr}
+  .fx .ko{width:70px}
+  .bar-row{grid-template-columns:minmax(66px,104px) 1fr 32px; gap:9px; font-size:12.5px}
+  table{font-size:13px}
+  th{padding:10px 9px 8px}
+  td{padding:10px 9px}
+  /* Nine columns will not fit a phone. Drop the ones you can rebuild
+     from the others, keep rank, team, score and captain. */
+  .col-opt{display:none}
+  pre.msg{font-size:11px; padding:12px 13px}
+  .awards{grid-template-columns:1fr 1fr}
+  .award{padding:11px 12px}
+  footer{margin-top:30px; font-size:11.5px}
 }
+@media (max-width:400px){
+  .awards{grid-template-columns:1fr}
+  .stat .v{font-size:20px}
+  .standing .pos{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
 </style>
 
 <header class="top">
@@ -234,9 +311,13 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
         <p id="league-sub"></p>
       </div>
     </div>
-    <div class="clock-box">
-      <span class="eyebrow" id="deadline-label">Next deadline</span>
-      <span class="t num" id="countdown"></span>
+    <div class="head-right">
+      <div class="clock-box">
+        <span class="eyebrow" id="deadline-label">Next deadline</span>
+        <span class="t num" id="countdown"></span>
+      </div>
+      <button class="icon-btn" id="keys-btn" type="button" aria-label="Keyboard shortcuts"
+        title="Keyboard shortcuts">?</button>
     </div>
   </div>
   <nav class="tabs" id="tabs" role="tablist"></nav>
@@ -244,22 +325,14 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
 
 <div class="wrap">
   <main>
-    <!-- OVERVIEW -->
     <div id="tab-overview" role="tabpanel">
-      <section class="block">
-        <div class="card standing" id="standing"></div>
-      </section>
-      <section class="block">
-        <div class="stats" id="stats"></div>
-      </section>
+      <section class="block"><div class="card standing" id="standing"></div></section>
+      <section class="block"><div class="stats" id="stats"></div></section>
       <section class="block">
         <header class="head-row">
-          <div>
-            <h2>The title race</h2>
-            <p>League position after every gameweek. Position 1 is top.</p>
-          </div>
+          <div><h2>The title race</h2><p>League position after every gameweek. Position 1 is top.</p></div>
           <div class="legend">
-            <span><i style="background:var(--s1)"></i>Your team</span>
+            <span><i style="background:var(--brand)"></i>Your team</span>
             <span><i style="background:var(--ink-3)"></i>Rivals</span>
           </div>
         </header>
@@ -268,27 +341,18 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
             <div class="chart-scroll" id="bump-scroll"></div>
             <div class="tip" id="bump-tip" role="status"></div>
           </div>
-          <details>
-            <summary>Show as a table</summary>
-            <div class="scroll" id="bump-table"></div>
-          </details>
+          <details><summary>Show as a table</summary><div class="scroll" id="bump-table"></div></details>
         </div>
       </section>
     </div>
 
-    <!-- GAMEWEEKS -->
     <div id="tab-gameweeks" role="tabpanel" hidden>
       <section class="block">
         <header class="head-row">
-          <div>
-            <h2>Gameweek board</h2>
-            <p id="gw-caption"></p>
-          </div>
+          <div><h2>Gameweek board</h2><p id="gw-caption"></p></div>
           <div class="chips" id="gw-chips" role="group" aria-label="Choose a gameweek"></div>
         </header>
-        <div class="card">
-          <div class="scroll" id="gw-table"></div>
-        </div>
+        <div class="card"><div class="scroll" id="gw-table"></div></div>
       </section>
       <section class="block">
         <header><h2>Points that week</h2><p>Net of transfer hits.</p></header>
@@ -297,19 +361,12 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
       <section class="block">
         <header><h2>Differentials</h2><p id="diff-caption"></p></header>
         <div class="grid2">
-          <div class="card pad">
-            <h3 class="subhead">Only you started</h3>
-            <div id="diff-mine"></div>
-          </div>
-          <div class="card pad">
-            <h3 class="subhead">Best you missed</h3>
-            <div id="diff-theirs"></div>
-          </div>
+          <div class="card pad"><h3 class="subhead">Only you started</h3><div id="diff-mine"></div></div>
+          <div class="card pad"><h3 class="subhead">Best you missed</h3><div id="diff-theirs"></div></div>
         </div>
       </section>
     </div>
 
-    <!-- PLANNING -->
     <div id="tab-planning" role="tabpanel" hidden>
       <section class="block">
         <header class="head-row">
@@ -326,10 +383,7 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
       </section>
       <section class="block">
         <header class="head-row">
-          <div>
-            <h2>Best picks</h2>
-            <p id="pick-caption"></p>
-          </div>
+          <div><h2>Best picks</h2><p id="pick-caption"></p></div>
           <div class="seg" id="pos-seg" role="group" aria-label="Choose a position"></div>
         </header>
         <div class="card"><div class="scroll" id="pick-table"></div></div>
@@ -344,15 +398,12 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
       </section>
     </div>
 
-    <!-- MONEY -->
     <div id="tab-money" role="tabpanel" hidden>
       <section class="block">
         <header class="head-row">
-          <div>
-            <h2>The books</h2>
-            <p>The pool was collected up front, so every prize is already funded.
-            What changes is how much has been handed over.</p>
-          </div>
+          <div><h2>The books</h2>
+          <p>The pool was collected up front, so every prize is already funded.
+             What changes is how much has been handed over.</p></div>
           <button class="btn" id="xlsx-btn" type="button">Download Excel</button>
         </header>
         <div class="stats" id="tre-stats"></div>
@@ -376,6 +427,18 @@ code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--su
     </footer>
   </main>
 </div>
+
+<dialog id="keys">
+  <div class="kh">Keyboard shortcuts</div>
+  <ul>
+    <li><span>Overview / Gameweeks / Planning / Money</span><span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></span></li>
+    <li><span>Previous / next gameweek</span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span></li>
+    <li><span>Copy the group reminder</span><span><kbd>C</kbd></span></li>
+    <li><span>Download the workbook</span><span><kbd>E</kbd></span></li>
+    <li><span>This list</span><span><kbd>?</kbd></span></li>
+    <li><span>Close</span><span><kbd>Esc</kbd></span></li>
+  </ul>
+</dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script id="fpl-data" type="application/json">__DATA__</script>

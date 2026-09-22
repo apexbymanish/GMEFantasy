@@ -1,94 +1,132 @@
-# FPL Mini-League Analyzer — Design
+# Design system
 
-*2026-09-22*
+The visual language of the GME Fantasy Board. Every value here is a token in
+`dashboard/page.html`; nothing in the page hard-codes a colour.
 
-## Problem
+## Where the colours come from
 
-A 10-manager FPL mini-league has no good way to see itself. The official site
-shows a standings table and nothing else: no gameweek winners, no history of the
-title race, no way to see what a rival owns that you don't.
+Sampled from gmeremit.com rather than guessed: `#ED1C24` is the dominant brand
+colour there, appearing 73 times across text, backgrounds and gradients. The
+site is white-first with generous space, so this page is light-first too.
 
-## Data source
+This is a colleagues' fantasy league, not a GME product. It borrows the palette
+and carries no GME logo or wordmark beyond the league's own name.
 
-The public FPL API, `https://fantasy.premierleague.com/api/`. No key required.
+## The one rule that shapes everything
 
-| Data | Endpoint | Notes |
+**Red means identity, not "negative".**
+
+GME red marks the brand, the active tab, your own team, and figures that
+genuinely demand action. It is deliberately *not* used for every negative
+number: a `-4` transfer hit and a `-60` points gap are ordinary facts, and
+painting them red would spend the accent until it stopped meaning anything.
+Those sit in secondary ink, where the minus sign does the work.
+
+| Meaning | Token | Used for |
 |---|---|---|
-| Players, teams, gameweek states | `bootstrap-static/` | ~1.7MB, 667 players × 109 fields incl. xG, xA, ICT, ownership |
-| Fixtures and difficulty | `fixtures/` | FDR 1–5 per side |
-| League standings | `leagues-classic/{id}/standings/` | paginated at 50; our league has 10 |
-| A manager's season | `entry/{id}/history/` | gameweek-by-gameweek + chips |
-| A manager's squad in one gameweek | `entry/{id}/event/{gw}/picks/` | **one call per manager per gameweek** |
-| Player points in one gameweek | `event/{gw}/live/` | one call covers everyone |
+| Identity | `--brand` | mark, active tab, your row, your line |
+| Needs action | `--brand` | money owed, a captain who blanked |
+| Ordinary negative | `--ink-2` | transfer hits, points gaps |
+| Good | `--good` | an easy fixture, a settled payment |
 
-Three constraints drove the design:
+## Tokens
 
-1. **Standings do not include squads.** To compare teams you must call `picks`
-   once per manager. 10 managers × 38 gameweeks = 380 calls for a full season.
-2. **The API sends no CORS headers.** A browser-only app cannot call it. Not a
-   problem for a CLI; it is the deciding constraint if this becomes a web app.
-3. **Future gameweeks return 404.** Valid range must be read from
-   `bootstrap-static → events` (`is_current`, `is_next`, `finished`).
+Light is the default on bare `:root`. Dark redefines the same names under both
+`@media (prefers-color-scheme: dark)` (guarded so an explicit light choice wins)
+and `:root[data-theme="dark"]` (so the toggle wins the other way).
 
-## Architecture
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `--ground` | `#F5F6F8` | `#0E1013` | page behind everything |
+| `--surface` | `#FFFFFF` | `#16181D` | cards, tables |
+| `--surface-2` | `#EFF1F4` | `#1E2128` | inset fills, bar tracks |
+| `--sunken` | `#F8F9FB` | `#121419` | code and message blocks |
+| `--ink` | `#16181D` | `#EDEFF3` | primary text |
+| `--ink-2` | `#545963` | `#A2A9B6` | secondary text |
+| `--ink-3` | `#8A909C` | `#6C7381` | labels, axes, muted figures |
+| `--line` | `#E4E7EC` | `#252932` | hairlines |
+| `--line-2` | `#CFD4DC` | `#39404D` | control borders |
+| `--brand` | `#ED1C24` | `#F0575D` | GME red |
+| `--good` | `#0F7B4F` | `#2E9E6B` | positive state |
+| `--s2` | `#1F6FD0` | `#5B90EE` | chart series |
 
-Three layers, each testable on its own.
+Dark is stepped for its own surface, not inverted: the brand red lightens to
+`#F0575D` so it still clears contrast on a dark ground.
 
-```
-fpl/api.py       fetch + cache      (the only code that touches the network)
-fpl/analysis.py  pure functions     (no I/O at all)
-fpl/cli.py       formatting         (argparse + terminal output)
-```
+## Chart palette, validated
 
-### Caching
+Run through the data-viz validator before any chart code was written, not
+eyeballed. Both modes pass every check:
 
-This is the load-bearing decision. **A finished gameweek is immutable**, so its
-`picks` and `live` data are cached permanently on disk. Only the gameweek in
-progress is re-fetched, and at most once a minute.
+| Mode | Steps | Surface | Worst adjacent pair |
+|---|---|---|---|
+| Light | `#ED1C24` `#1F6FD0` `#0F7B4F` | `#FFFFFF` | ΔE 20.9 deutan, 21.7 normal |
+| Dark | `#F0575D` `#5B90EE` `#2E9E6B` | `#16181D` | ΔE 19.5 deutan, 22.0 normal |
 
-| Data | TTL |
+An earlier candidate paired teal with green and failed twice: the teal read as
+grey (chroma 0.094) and the pair sat at ΔE 10.1 for normal vision, below the
+floor of 15. It was cut rather than shipped with a warning.
+
+**Ten managers are never ten colours.** The title race draws your line in brand
+red and every rival in `--ink-3`, with each team named at the end of its own
+line. Identity comes from the label, so the chart stays readable and colour is
+never the only channel.
+
+## Typography
+
+| Role | Face | Notes |
+|---|---|---|
+| Interface | Archivo 400-800 | headings at 700-800, tight tracking |
+| Figures | IBM Plex Mono 400-600 | tabular, so columns line up |
+
+Large single figures (`500,000`) use Archivo, not the mono: monospace gives the
+comma a full character slot and the number reads as `500 , 000`.
+
+## Shape and depth
+
+`--r: 10px` for cards and panels, `--r-sm: 7px` for controls and badges.
+Shadows are near-invisible in light (`0 1px 2px` at 5% plus `0 1px 3px` at 4%)
+and absent in dark, where the surface step carries the separation instead.
+
+Border, fill and shadow are spent by role. A table is one card; its rows are
+not cards. Only the standing strip takes a coloured edge, because it is the one
+thing about you.
+
+## Mobile
+
+Phone width is the design target, not an afterthought. Breakpoints at 860px
+(two columns become one), 640px (phone) and 400px (small phone).
+
+**Column priority.** The gameweek board has nine columns, which no phone fits.
+Rather than scrolling sideways, columns marked `.col-opt` are hidden below
+640px, leaving rank, team, score, captain and captain points — enough to answer
+"who won and what did they captain". The same applies to each wide table:
+
+| Table | Kept on a phone | Dropped |
+|---|---|---|
+| Gameweek board | rank, team, GW pts, captain, C pts | manager, season, hit, bench |
+| Best picks | player, club, price, form, FDR | xGI/90, ownership |
+| Prize ledger | GW, winner, amount, status | score |
+| Projected winnings | position, team, projected, net | won so far, if frozen |
+
+Every control is at least 38px tall and tabs are 44px, so they are comfortable
+to tap. The page never scrolls horizontally; only the season chart does, inside
+its own container.
+
+## Keyboard
+
+Shown on the page under `?`, and only offered on devices with a real pointer.
+
+| Key | Action |
 |---|---|
-| `bootstrap-static` | 1 hour |
-| `fixtures` | 1 day |
-| `picks`, `live` — finished gameweek | forever |
-| `picks`, `live` — current gameweek | 60s |
-| standings, history | 5 min |
+| `1` `2` `3` `4` | switch tab |
+| `←` `→` | previous / next gameweek |
+| `C` | copy the group reminder |
+| `E` | download the workbook |
+| `?` | this list |
 
-Result: a cold run makes ~13 calls; a warm run makes none and completes in 0.4s.
-Rivals are fetched concurrently with a 10-worker thread pool.
+## Installing it
 
-### Analysis
-
-Pure functions taking already-fetched dicts. Key decisions:
-
-- **Weekly rank is net of transfer hits.** Gross points decide nothing; a -4 has
-  swung a gameweek in this league already.
-- **Ownership counts starters only** (picks 1–11). A benched player contributes
-  nothing, so counting the full 15 would misreport how "template" a squad is —
-  except under Bench Boost, which is accepted as a known simplification.
-- **Player scoring is normalised within position.** Defenders would otherwise
-  lose to strikers on attacking numbers. Weighting: form 30%, points-per-game
-  20%, xGI/90 20%, fixture ease 20%, value 10%.
-- **Availability filter:** `status == "a"` and `chance_of_playing_next_round`
-  either null or ≥ 75, plus a minimum-minutes floor, plus exclusion of teams
-  with no fixture in the window (blank gameweeks).
-
-## Testing
-
-The analysis layer is pure, so it is tested against hand-built fixture data with
-no network. 29 tests covering: hit-adjusted ranking, captain doubling, starter
-vs. squad ownership, differential detection, cumulative league position, fixture
-difficulty windows, normalisation of flat inputs, and every availability filter.
-
-## Known limitations
-
-- Bench Boost weeks are not special-cased in ownership counts.
-- Player scoring ignores set-piece duty, rotation risk and double gameweeks.
-- No authentication, so it cannot read your team before a deadline — only
-  squads that are already locked in.
-
-## If this becomes a web app
-
-`api.py` and `analysis.py` move behind HTTP routes unchanged. The server-side
-fetch also solves the CORS block. The cache becomes shared rather than per-user,
-which makes it strictly cheaper.
+The page builds a web app manifest at runtime and points a `<link rel=manifest>`
+at it, so a phone can add it to the home screen and open it without browser
+chrome. The icon is an inline SVG crest in brand red; there is no GME logo in it.

@@ -65,6 +65,12 @@ live gameweek is re-fetched, at most once a minute.
 Cache lives in `~/.cache/fpl-analyzer` (override with `FPL_CACHE`). Delete it to
 force a refresh.
 
+## Design
+
+The palette, type, mobile column priorities and keyboard shortcuts are
+documented in [docs/DESIGN.md](docs/DESIGN.md). The architecture and data
+sources are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Tests
 
 ```sh

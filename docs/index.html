@@ -1,0 +1,992 @@
+<title>GME Fantasy Board</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#F4F4EF; --surface:#FCFCFA; --surface-2:#ECECE3; --raise:#FFFFFF;
+  --ink:#14170F; --ink-2:#575C4E; --ink-3:#8B907F;
+  --line:#E3E3D8; --line-2:#CFCFC1;
+  --s1:#B5650A; --s2:#00836A; --s3:#2F55C9; --s4:#A83246;
+  --good:#00836A; --bad:#A83246;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0B0D08; --surface:#12150F; --surface-2:#1B1F16; --raise:#171B13;
+    --ink:#F1F2EB; --ink-2:#A8AD9B; --ink-3:#717766;
+    --line:#242820; --line-2:#363C2D;
+    --s1:#C87C12; --s2:#1F9276; --s3:#5B80E4; --s4:#CE5870;
+    --good:#1F9276; --bad:#CE5870;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0B0D08; --surface:#12150F; --surface-2:#1B1F16; --raise:#171B13;
+  --ink:#F1F2EB; --ink-2:#A8AD9B; --ink-3:#717766;
+  --line:#242820; --line-2:#363C2D;
+  --s1:#C87C12; --s2:#1F9276; --s3:#5B80E4; --s4:#CE5870;
+  --good:#1F9276; --bad:#CE5870;
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground); color:var(--ink);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+.num,.krw{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
+.eyebrow{font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.wrap{max-width:1060px; margin:0 auto; padding-inline:16px}
+
+/* ---------- header ---------- */
+.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
+  background:var(--ground); border-bottom:1px solid var(--line)}
+.top-row{max-width:1060px; margin:0 auto; padding:14px 16px 0;
+  display:flex; align-items:center; gap:14px; justify-content:space-between; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:11px; min-width:0}
+.crest{width:30px; height:35px; flex:none; border-radius:3px 3px 13px 13px;
+  background:linear-gradient(175deg,var(--s1) 0 46%, var(--ink) 46% 100%)}
+.brand h1{font-size:17px; font-weight:800}
+.brand p{margin:1px 0 0; font-size:12px; color:var(--ink-3)}
+.clock-box{text-align:right}
+.clock-box .eyebrow{display:block}
+.clock-box .t{font-size:17px; font-weight:700; letter-spacing:0}
+
+/* tabs */
+nav.tabs{max-width:1060px; margin:0 auto; padding:0 16px; display:flex; gap:2px; overflow-x:auto}
+nav.tabs button{
+  appearance:none; background:none; border:0; cursor:pointer; white-space:nowrap;
+  font:600 13.5px/1 Archivo,sans-serif; color:var(--ink-3);
+  padding:14px 14px 13px; border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--s1)}
+nav.tabs button:focus-visible{outline:2px solid var(--s1); outline-offset:-4px; border-radius:3px}
+
+/* ---------- layout ---------- */
+main{padding-block:30px 64px}
+section.block{margin-bottom:38px}
+section.block:last-child{margin-bottom:0}
+.block > header{margin-bottom:14px}
+.block > header h2{font-size:17px}
+.block > header p{margin:4px 0 0; font-size:13px; color:var(--ink-2); max-width:66ch}
+.head-row{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:8px}
+.card.pad{padding:18px 20px}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:24px}
+@media (max-width:860px){ .grid2{grid-template-columns:1fr} }
+
+/* ---------- standing ---------- */
+.standing{display:flex; flex-wrap:wrap; align-items:center; gap:14px 30px;
+  padding:20px 22px; border-left:3px solid var(--s1)}
+.standing .pos{font-size:46px; font-weight:800; line-height:.95; letter-spacing:-.045em}
+.standing .pos sup{font-size:16px; font-weight:600; margin-left:2px}
+.standing .who{flex:1 1 210px; min-width:0}
+.standing .who h2{font-size:21px; font-weight:800}
+.standing .who p{margin:3px 0 0; color:var(--ink-2); font-size:13px}
+.standing .verdict{flex:1 1 280px; font-size:13px; color:var(--ink-2); line-height:1.55}
+.standing .verdict b{color:var(--ink); font-weight:600}
+
+/* ---------- stat grid ---------- */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(142px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.stat{background:var(--surface); padding:14px 16px 15px}
+.stat .k{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.stat .v{font-size:26px; font-weight:800; line-height:1.2; margin-top:6px; letter-spacing:-.035em}
+.stat .n{font-size:11.5px; color:var(--ink-3); margin-top:2px}
+.stat .v.good{color:var(--good)} .stat .v.bad{color:var(--bad)}
+.stat .v.money{font-family:Archivo,"Helvetica Neue",Arial,sans-serif; letter-spacing:-.035em}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto; overscroll-behavior-x:contain}
+table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:520px}
+th{text-align:left; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:600; padding:12px 12px 9px; white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+th.r,td.r{text-align:right}
+td{padding:10px 12px; border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+tr.me td{background:color-mix(in srgb,var(--s1) 8%,transparent)}
+tr.me td:first-child{box-shadow:inset 3px 0 0 var(--s1)}
+td.team{font-weight:600; white-space:nowrap}
+td.rank{color:var(--ink-3); width:38px}
+.neg{color:var(--bad)} .zero{color:var(--ink-3)}
+.badge{display:inline-block; font:600 9.5px/1.7 "IBM Plex Mono",monospace; letter-spacing:.07em;
+  padding:0 5px; border-radius:2px; text-transform:uppercase; vertical-align:1px}
+.badge.win{background:var(--good); color:var(--surface)}
+.badge.alt{background:var(--s3); color:#fff}
+
+/* ---------- controls ---------- */
+.chips{display:flex; gap:5px; flex-wrap:wrap}
+.chip,.btn{font:600 12.5px/1 Archivo,sans-serif; border:1px solid var(--line-2);
+  background:var(--surface); color:var(--ink-2); border-radius:6px; cursor:pointer;
+  padding:8px 12px; transition:.12s}
+.chip:hover,.btn:hover{color:var(--ink); border-color:var(--ink-3)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--ground)}
+.btn{color:var(--ink)}
+.btn.sm{padding:5px 10px; font-size:11.5px}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.on{background:var(--good); border-color:var(--good); color:var(--surface)}
+.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+.seg{display:inline-flex; border:1px solid var(--line-2); border-radius:6px; overflow:hidden}
+.seg button{font:600 12px/1 Archivo,sans-serif; padding:8px 13px; background:var(--surface);
+  color:var(--ink-3); border:0; border-right:1px solid var(--line-2); cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--ground)}
+.seg button:focus-visible{outline:2px solid var(--s1); outline-offset:-3px}
+
+/* ---------- chart ---------- */
+.chart-scroll{overflow-x:auto}
+.chart-scroll svg{display:block; min-width:580px; width:100%; height:auto}
+.bump-line{fill:none; stroke-linecap:round; stroke-linejoin:round; transition:opacity .12s}
+.bump-hit{fill:none; stroke:transparent; stroke-width:16; cursor:pointer}
+.dim .bump-line{opacity:.25}
+.dim .bump-line.on{opacity:1}
+.tipwrap{position:relative}
+.tip{position:absolute; pointer-events:none; opacity:0; transform:translate(-50%,-115%);
+  background:var(--ink); color:var(--ground); padding:7px 10px; border-radius:5px;
+  font-size:12px; white-space:nowrap; transition:opacity .1s; z-index:5}
+.tip.on{opacity:1}
+.legend{display:flex; gap:15px; flex-wrap:wrap; font-size:12px; color:var(--ink-3); align-items:center}
+.legend i{display:inline-block; width:13px; height:3px; border-radius:2px; margin-right:6px; vertical-align:middle}
+
+/* ---------- bars ---------- */
+.bars{display:flex; flex-direction:column; gap:8px}
+.bar-row{display:grid; grid-template-columns:minmax(80px,148px) 1fr 40px; align-items:center;
+  gap:12px; font-size:13px}
+.bar-row .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500}
+.bar-track{display:block; height:14px; background:var(--surface-2); border-radius:0 3px 3px 0}
+.bar-fill{display:block; height:100%; background:var(--s2); border-radius:0 4px 4px 0; min-width:3px}
+.bar-row.me .bar-fill{background:var(--s1)}
+.bar-row.me .nm{color:var(--s1); font-weight:600}
+.bar-row .val{text-align:right; font-weight:600}
+
+/* ---------- fixtures ---------- */
+.fixtures{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:1px;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.fx{background:var(--surface); padding:10px 13px; display:flex; align-items:center; gap:9px;
+  font-size:13px; box-shadow:0 0 0 1px var(--line)}
+.fx .ko{font:500 10.5px/1.5 "IBM Plex Mono",monospace; color:var(--ink-3); width:80px; flex:none}
+.fx .tm{font-weight:600}
+.fx .v{color:var(--ink-3); font-size:11px}
+.fdr-key{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:12px;
+  font-size:12px; color:var(--ink-3)}
+.fdr-key .lbl{font-weight:600; color:var(--ink-2)}
+.fdr-key i{font-style:normal; margin-right:3px}
+.fdr{display:inline-block; min-width:22px; text-align:center;
+  font:500 11px/1.7 "IBM Plex Mono",monospace; border-radius:3px; padding:0 4px; border:1px solid}
+.fdr.easy{color:var(--good); border-color:color-mix(in srgb,var(--good) 40%,transparent);
+  background:color-mix(in srgb,var(--good) 9%,transparent)}
+.fdr.mid{color:var(--ink-3); border-color:var(--line-2)}
+.fdr.hard{color:var(--bad); border-color:color-mix(in srgb,var(--bad) 40%,transparent);
+  background:color-mix(in srgb,var(--bad) 9%,transparent)}
+
+/* ---------- lists ---------- */
+.dlist{list-style:none; margin:0; padding:0}
+.dlist li{display:flex; align-items:baseline; gap:9px; padding:9px 0;
+  border-bottom:1px solid var(--line); font-size:13.5px}
+.dlist li:last-child{border-bottom:0}
+.dlist .p{margin-left:auto; font-weight:600; font-family:"IBM Plex Mono",monospace}
+.dlist .pos{font-size:9.5px; letter-spacing:.07em; color:var(--ink-3); border:1px solid var(--line-2);
+  padding:1px 4px; border-radius:3px; text-transform:uppercase}
+.dlist .club{font-size:11.5px; color:var(--ink-3)}
+.subhead{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:600; margin:0 0 8px}
+.empty{color:var(--ink-3); font-size:13px; font-style:italic; padding:6px 0; margin:0}
+.note{font-size:12.5px; color:var(--ink-3); margin:14px 0 0}
+
+/* ---------- misc ---------- */
+pre.msg{background:var(--surface-2); border:1px solid var(--line); border-radius:6px;
+  padding:14px 16px; font:400 12px/1.65 "IBM Plex Mono",monospace; overflow-x:auto;
+  white-space:pre; margin:10px 0 0; color:var(--ink); max-height:320px; overflow-y:auto}
+.warn{border-left:3px solid var(--s1); background:color-mix(in srgb,var(--s1) 7%,transparent);
+  padding:12px 15px; border-radius:0 6px 6px 0; font-size:13px; margin-top:16px}
+.awards{display:grid; grid-template-columns:repeat(auto-fit,minmax(196px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.award{background:var(--surface); padding:12px 14px}
+.award .t{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.award .h{font-size:14px; font-weight:600; margin-top:5px}
+.award .d{font-size:12px; color:var(--ink-3); margin-top:1px}
+details{margin-top:16px}
+summary{cursor:pointer; color:var(--ink-3); font-size:12.5px; padding:5px 0}
+summary:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:12px; color:var(--ink-3); display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between}
+code{font-family:"IBM Plex Mono",monospace; font-size:.92em; background:var(--surface-2);
+  padding:2px 6px; border-radius:4px}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+@media (max-width:600px){
+  .standing{padding:16px 18px}
+  .standing .pos{font-size:38px}
+  .standing .verdict{flex-basis:100%; border-top:1px solid var(--line); padding-top:12px}
+  main{padding-block:22px 48px}
+  section.block{margin-bottom:30px}
+}
+</style>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <div class="crest" aria-hidden="true"></div>
+      <div>
+        <h1 id="league-name">GME Fantasy League</h1>
+        <p id="league-sub"></p>
+      </div>
+    </div>
+    <div class="clock-box">
+      <span class="eyebrow" id="deadline-label">Next deadline</span>
+      <span class="t num" id="countdown"></span>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
+
+<div class="wrap">
+  <main>
+    <!-- OVERVIEW -->
+    <div id="tab-overview" role="tabpanel">
+      <section class="block">
+        <div class="card standing" id="standing"></div>
+      </section>
+      <section class="block">
+        <div class="stats" id="stats"></div>
+      </section>
+      <section class="block">
+        <header class="head-row">
+          <div>
+            <h2>The title race</h2>
+            <p>League position after every gameweek. Position 1 is top.</p>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--s1)"></i>Your team</span>
+            <span><i style="background:var(--ink-3)"></i>Rivals</span>
+          </div>
+        </header>
+        <div class="card pad">
+          <div class="tipwrap">
+            <div class="chart-scroll" id="bump-scroll"></div>
+            <div class="tip" id="bump-tip" role="status"></div>
+          </div>
+          <details>
+            <summary>Show as a table</summary>
+            <div class="scroll" id="bump-table"></div>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <!-- GAMEWEEKS -->
+    <div id="tab-gameweeks" role="tabpanel" hidden>
+      <section class="block">
+        <header class="head-row">
+          <div>
+            <h2>Gameweek board</h2>
+            <p id="gw-caption"></p>
+          </div>
+          <div class="chips" id="gw-chips" role="group" aria-label="Choose a gameweek"></div>
+        </header>
+        <div class="card">
+          <div class="scroll" id="gw-table"></div>
+        </div>
+      </section>
+      <section class="block">
+        <header><h2>Points that week</h2><p>Net of transfer hits.</p></header>
+        <div class="card pad"><div class="bars" id="gw-bars"></div></div>
+      </section>
+      <section class="block">
+        <header><h2>Differentials</h2><p id="diff-caption"></p></header>
+        <div class="grid2">
+          <div class="card pad">
+            <h3 class="subhead">Only you started</h3>
+            <div id="diff-mine"></div>
+          </div>
+          <div class="card pad">
+            <h3 class="subhead">Best you missed</h3>
+            <div id="diff-theirs"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PLANNING -->
+    <div id="tab-planning" role="tabpanel" hidden>
+      <section class="block">
+        <header class="head-row">
+          <div><h2>Coming up</h2><p id="up-caption"></p></div>
+          <div class="chips" id="up-chips" role="group" aria-label="Choose a gameweek"></div>
+        </header>
+        <div class="fdr-key">
+          <span class="lbl">How hard is the game for that club?</span>
+          <span><i class="fdr easy">1</i><i class="fdr easy">2</i> easy</span>
+          <span><i class="fdr mid">3</i> average</span>
+          <span><i class="fdr hard">4</i><i class="fdr hard">5</i> hard</span>
+        </div>
+        <div class="fixtures" id="up-fixtures"></div>
+      </section>
+      <section class="block">
+        <header class="head-row">
+          <div>
+            <h2>Best picks</h2>
+            <p id="pick-caption"></p>
+          </div>
+          <div class="seg" id="pos-seg" role="group" aria-label="Choose a position"></div>
+        </header>
+        <div class="card"><div class="scroll" id="pick-table"></div></div>
+      </section>
+      <section class="block">
+        <header class="head-row">
+          <div><h2>Reminder for the group</h2>
+          <p>Plain text, so it survives KakaoTalk, Viber and WhatsApp.</p></div>
+          <button class="btn" id="copy-btn" type="button">Copy message</button>
+        </header>
+        <pre class="msg" id="remind-text"></pre>
+      </section>
+    </div>
+
+    <!-- MONEY -->
+    <div id="tab-money" role="tabpanel" hidden>
+      <section class="block">
+        <header class="head-row">
+          <div>
+            <h2>The books</h2>
+            <p>The pool was collected up front, so every prize is already funded.
+            What changes is how much has been handed over.</p>
+          </div>
+          <button class="btn" id="xlsx-btn" type="button">Download Excel</button>
+        </header>
+        <div class="stats" id="tre-stats"></div>
+      </section>
+      <section class="block">
+        <header><h2>Weekly prizes</h2><p id="pay-caption"></p></header>
+        <div class="card"><div class="scroll" id="pay-table"></div></div>
+        <p class="note" id="pay-note"></p>
+        <div id="tie-warning"></div>
+      </section>
+      <section class="block">
+        <header><h2>If the season froze today</h2><p id="money-caption"></p></header>
+        <div class="card"><div class="scroll" id="money-table"></div></div>
+        <div class="awards" id="awards" style="margin-top:18px"></div>
+      </section>
+    </div>
+
+    <footer>
+      <span>Data: the public Fantasy Premier League API. Snapshot <b id="gen-time"></b>.</span>
+      <span>Refresh with <code>python3 -m fpl export</code></span>
+    </footer>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script id="fpl-data" type="application/json">{"generated":"2026-09-22T00:57:02+00:00","league":{"id":478017,"name":"GME Fantasy League"},"me":6144939,"currentGw":5,"nextGw":6,"nextDeadline":"2026-10-10T10:00:00Z","playedGws":[1,2,3,4,5],"managers":[{"entry":1844688,"team":"Carrickonthewheel","manager":""},{"entry":2291806,"team":"21Loading","manager":""},{"entry":967093,"team":"Saga FC","manager":""},{"entry":2586046,"team":"suubaash","manager":""},{"entry":5950871,"team":"Falano","manager":""},{"entry":3643090,"team":"Tabaki_XI","manager":""},{"entry":6144939,"team":"Manish's Team","manager":""},{"entry":2542709,"team":"Binodp","manager":""},{"entry":6005854,"team":"Dark Horse","manager":""},{"entry":7753170,"team":"Babaji","manager":""}],"standings":[{"rank":1,"entry":1844688,"team":"Carrickonthewheel","manager":"","gw":59,"total":358},{"rank":2,"entry":2291806,"team":"21Loading","manager":"","gw":68,"total":339},{"rank":3,"entry":967093,"team":"Saga FC","manager":"","gw":62,"total":328},{"rank":4,"entry":2586046,"team":"suubaash","manager":"","gw":47,"total":315},{"rank":5,"entry":5950871,"team":"Falano","manager":"","gw":49,"total":310},{"rank":6,"entry":3643090,"team":"Tabaki_XI","manager":"","gw":36,"total":304},{"rank":7,"entry":6144939,"team":"Manish's Team","manager":"","gw":42,"total":298},{"rank":8,"entry":2542709,"team":"Binodp","manager":"","gw":46,"total":285},{"rank":9,"entry":6005854,"team":"Dark Horse","manager":"","gw":39,"total":265},{"rank":10,"entry":7753170,"team":"Babaji","manager":"","gw":63,"total":257}],"season":{"1":[{"entry":2586046,"team":"suubaash","points":60,"total":60,"place":1},{"entry":6144939,"team":"Manish's Team","points":60,"total":60,"place":2},{"entry":1844688,"team":"Carrickonthewheel","points":57,"total":57,"place":3},{"entry":6005854,"team":"Dark Horse","points":53,"total":53,"place":4},{"entry":2291806,"team":"21Loading","points":52,"total":52,"place":5},{"entry":2542709,"team":"Binodp","points":52,"total":52,"place":6},{"entry":5950871,"team":"Falano","points":51,"total":51,"place":7},{"entry":967093,"team":"Saga FC","points":48,"total":48,"place":8},{"entry":3643090,"team":"Tabaki_XI","points":39,"total":39,"place":9},{"entry":7753170,"team":"Babaji","points":29,"total":29,"place":10}],"2":[{"entry":1844688,"team":"Carrickonthewheel","points":117,"total":174,"place":1},{"entry":3643090,"team":"Tabaki_XI","points":110,"total":149,"place":2},{"entry":2291806,"team":"21Loading","points":94,"total":146,"place":3},{"entry":6144939,"team":"Manish's Team","points":92,"total":152,"place":4},{"entry":967093,"team":"Saga FC","points":90,"total":138,"place":5},{"entry":5950871,"team":"Falano","points":79,"total":130,"place":6},{"entry":2586046,"team":"suubaash","points":72,"total":132,"place":7},{"entry":7753170,"team":"Babaji","points":68,"total":97,"place":8},{"entry":2542709,"team":"Binodp","points":65,"total":117,"place":9},{"entry":6005854,"team":"Dark Horse","points":64,"total":117,"place":10}],"3":[{"entry":2586046,"team":"suubaash","points":69,"total":201,"place":1},{"entry":7753170,"team":"Babaji","points":59,"total":156,"place":2},{"entry":2291806,"team":"21Loading","points":56,"total":202,"place":3},{"entry":967093,"team":"Saga FC","points":56,"total":194,"place":4},{"entry":3643090,"team":"Tabaki_XI","points":56,"total":205,"place":5},{"entry":1844688,"team":"Carrickonthewheel","points":55,"total":229,"place":6},{"entry":2542709,"team":"Binodp","points":51,"total":168,"place":7},{"entry":6005854,"team":"Dark Horse","points":47,"total":164,"place":8},{"entry":5950871,"team":"Falano","points":42,"total":172,"place":9},{"entry":6144939,"team":"Manish's Team","points":35,"total":187,"place":10}],"4":[{"entry":5950871,"team":"Falano","points":89,"total":261,"place":1},{"entry":967093,"team":"Saga FC","points":72,"total":266,"place":2},{"entry":2542709,"team":"Binodp","points":71,"total":239,"place":3},{"entry":1844688,"team":"Carrickonthewheel","points":70,"total":299,"place":4},{"entry":2291806,"team":"21Loading","points":69,"total":271,"place":5},{"entry":6144939,"team":"Manish's Team","points":69,"total":256,"place":6},{"entry":2586046,"team":"suubaash","points":67,"total":268,"place":7},{"entry":3643090,"team":"Tabaki_XI","points":63,"total":268,"place":8},{"entry":6005854,"team":"Dark Horse","points":62,"total":226,"place":9},{"entry":7753170,"team":"Babaji","points":38,"total":194,"place":10}],"5":[{"entry":2291806,"team":"21Loading","points":68,"total":339,"place":1},{"entry":7753170,"team":"Babaji","points":63,"total":257,"place":2},{"entry":967093,"team":"Saga FC","points":62,"total":328,"place":3},{"entry":1844688,"team":"Carrickonthewheel","points":59,"total":358,"place":4},{"entry":5950871,"team":"Falano","points":49,"total":310,"place":5},{"entry":2586046,"team":"suubaash","points":47,"total":315,"place":6},{"entry":2542709,"team":"Binodp","points":46,"total":285,"place":7},{"entry":6144939,"team":"Manish's Team","points":42,"total":298,"place":8},{"entry":6005854,"team":"Dark Horse","points":39,"total":265,"place":9},{"entry":3643090,"team":"Tabaki_XI","points":36,"total":304,"place":10}]},"positions":{"2586046":{"1":1,"2":6,"3":4,"4":3,"5":4},"6144939":{"1":2,"2":2,"3":6,"4":7,"5":7},"1844688":{"1":3,"2":1,"3":1,"4":1,"5":1},"6005854":{"1":4,"2":9,"3":9,"4":9,"5":9},"2291806":{"1":5,"2":4,"3":3,"4":2,"5":2},"2542709":{"1":6,"2":8,"3":8,"4":8,"5":8},"5950871":{"1":7,"2":7,"3":7,"4":6,"5":5},"967093":{"1":8,"2":5,"3":5,"4":5,"5":3},"3643090":{"1":9,"2":3,"3":2,"4":4,"5":6},"7753170":{"1":10,"2":10,"3":10,"4":10,"5":10}},"gameweeks":{"1":{"finished":true,"rows":[{"place":1,"entry":2586046,"team":"suubaash","manager":"","points":60,"gross":60,"hit":0,"transfers":0,"bench":1,"chip":null,"captain":411,"captainPoints":4,"starters":[496,4,229,388,200,445,40,13,14,367,411]},{"place":2,"entry":6144939,"team":"Manish's Team","manager":"","points":60,"gross":60,"hit":0,"transfers":0,"bench":2,"chip":null,"captain":165,"captainPoints":22,"starters":[1,473,229,8,426,427,428,155,464,165,490]},{"place":3,"entry":1844688,"team":"Carrickonthewheel","manager":"","points":57,"gross":57,"hit":0,"transfers":0,"bench":4,"chip":null,"captain":411,"captainPoints":4,"starters":[109,8,11,418,368,426,427,124,557,165,411]},{"place":4,"entry":6005854,"team":"Dark Horse","manager":"","points":53,"gross":53,"hit":0,"transfers":0,"bench":3,"chip":null,"captain":411,"captainPoints":4,"starters":[572,61,112,418,12,15,260,457,411,165,223]},{"place":5,"entry":2291806,"team":"21Loading","manager":"","points":52,"gross":52,"hit":0,"transfers":0,"bench":1,"chip":null,"captain":411,"captainPoints":4,"starters":[1,115,204,423,335,426,94,13,124,411,106]},{"place":6,"entry":2542709,"team":"Binodp","manager":"","points":52,"gross":52,"hit":0,"transfers":0,"bench":0,"chip":null,"captain":411,"captainPoints":4,"starters":[226,112,200,61,8,12,40,452,155,411,26]},{"place":7,"entry":5950871,"team":"Falano","manager":"","points":51,"gross":51,"hit":0,"transfers":0,"bench":3,"chip":null,"captain":411,"captainPoints":4,"starters":[496,4,556,305,8,418,426,368,557,165,411]},{"place":8,"entry":967093,"team":"Saga FC","manager":"","points":48,"gross":48,"hit":0,"transfers":0,"bench":11,"chip":null,"captain":411,"captainPoints":4,"starters":[496,356,8,423,368,398,542,426,557,411,165]},{"place":9,"entry":3643090,"team":"Tabaki_XI","manager":"","points":39,"gross":39,"hit":0,"transfers":0,"bench":17,"chip":null,"captain":411,"captainPoints":4,"starters":[496,11,175,4,426,427,124,542,165,411,491]},{"place":10,"entry":7753170,"team":"Babaji","manager":"","points":29,"gross":29,"hit":0,"transfers":0,"bench":8,"chip":null,"captain":379,"captainPoints":4,"starters":[384,11,142,358,61,12,397,428,480,379,106]}],"ownership":{"496":4,"4":3,"229":2,"388":1,"200":2,"445":1,"40":2,"13":2,"14":1,"367":1,"411":8,"1":2,"473":1,"8":5,"426":6,"427":3,"428":2,"155":2,"464":1,"165":6,"490":1,"109":1,"11":3,"418":3,"368":3,"124":3,"557":3,"572":1,"61":3,"112":2,"12":3,"15":1,"260":1,"457":1,"223":1,"115":1,"204":1,"423":2,"335":1,"94":1,"106":2,"226":1,"452":1,"26":1,"556":1,"305":1,"356":1,"398":1,"542":2,"175":1,"491":1,"384":1,"142":1,"358":1,"397":1,"480":1,"379":1},"playerPoints":{"496":2,"4":5,"229":6,"388":10,"200":6,"445":3,"40":8,"13":3,"14":1,"367":12,"411":2,"1":6,"473":5,"8":9,"426":2,"427":2,"428":2,"155":1,"464":4,"165":11,"490":1,"109":6,"11":6,"418":1,"368":8,"124":2,"557":6,"572":10,"61":1,"112":1,"12":9,"15":11,"260":3,"457":0,"223":2,"115":17,"204":1,"423":1,"335":13,"94":3,"106":0,"226":7,"452":0,"26":6,"556":1,"305":2,"356":2,"398":1,"542":2,"175":1,"491":2,"384":3,"142":0,"358":0,"397":2,"480":2,"379":2}},"2":{"finished":true,"rows":[{"place":1,"entry":1844688,"team":"Carrickonthewheel","manager":"","points":117,"gross":117,"hit":0,"transfers":0,"bench":2,"chip":null,"captain":426,"captainPoints":46,"starters":[109,8,11,418,368,426,427,124,557,165,411]},{"place":2,"entry":3643090,"team":"Tabaki_XI","manager":"","points":110,"gross":110,"hit":0,"transfers":1,"bench":17,"chip":null,"captain":411,"captainPoints":26,"starters":[496,11,175,4,426,427,124,542,165,411,346]},{"place":3,"entry":2291806,"team":"21Loading","manager":"","points":94,"gross":94,"hit":0,"transfers":1,"bench":2,"chip":null,"captain":411,"captainPoints":26,"starters":[1,115,87,423,335,426,94,13,124,411,106]},{"place":4,"entry":6144939,"team":"Manish's Team","manager":"","points":92,"gross":92,"hit":0,"transfers":0,"bench":9,"chip":null,"captain":165,"captainPoints":18,"starters":[1,499,503,8,473,229,426,427,428,452,165]},{"place":5,"entry":967093,"team":"Saga FC","manager":"","points":90,"gross":90,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":411,"captainPoints":26,"starters":[496,356,8,87,368,398,542,426,557,411,165]},{"place":6,"entry":5950871,"team":"Falano","manager":"","points":79,"gross":79,"hit":0,"transfers":1,"bench":8,"chip":null,"captain":411,"captainPoints":26,"starters":[496,4,418,305,8,542,154,368,557,165,411]},{"place":7,"entry":2586046,"team":"suubaash","manager":"","points":72,"gross":72,"hit":0,"transfers":0,"bench":0,"chip":null,"captain":411,"captainPoints":26,"starters":[496,4,229,388,200,445,40,13,14,367,411]},{"place":8,"entry":7753170,"team":"Babaji","manager":"","points":68,"gross":68,"hit":0,"transfers":0,"bench":13,"chip":null,"captain":379,"captainPoints":16,"starters":[384,11,142,358,61,12,397,428,480,379,106]},{"place":9,"entry":2542709,"team":"Binodp","manager":"","points":65,"gross":65,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":411,"captainPoints":26,"starters":[226,112,200,61,8,499,12,40,155,411,26]},{"place":10,"entry":6005854,"team":"Dark Horse","manager":"","points":64,"gross":64,"hit":0,"transfers":1,"bench":16,"chip":null,"captain":411,"captainPoints":26,"starters":[28,61,418,112,499,12,15,260,236,411,165]}],"ownership":{"109":1,"8":5,"11":3,"418":3,"368":3,"426":5,"427":3,"124":3,"557":3,"165":6,"411":8,"496":4,"175":1,"4":3,"542":3,"346":1,"1":2,"115":1,"87":2,"423":1,"335":1,"94":1,"13":2,"106":2,"499":3,"503":1,"473":1,"229":2,"428":2,"452":1,"356":1,"398":1,"305":1,"154":1,"388":1,"200":2,"445":1,"40":2,"14":1,"367":1,"384":1,"142":1,"358":1,"61":3,"12":3,"397":1,"480":1,"379":1,"226":1,"112":2,"155":1,"26":1,"28":1,"15":1,"260":1,"236":1},"playerPoints":{"109":0,"8":11,"11":6,"418":4,"368":4,"426":23,"427":11,"124":13,"557":0,"165":9,"411":13,"496":1,"175":2,"4":8,"542":3,"346":8,"1":6,"115":0,"87":3,"423":2,"335":4,"94":10,"13":5,"106":2,"499":1,"503":0,"473":0,"229":12,"428":9,"452":1,"356":1,"398":9,"305":6,"154":7,"388":2,"200":1,"445":6,"40":5,"14":1,"367":5,"384":0,"142":1,"358":1,"61":4,"12":11,"397":5,"480":13,"379":8,"226":3,"112":1,"155":0,"26":2,"28":2,"15":3,"260":1,"236":2}},"3":{"finished":true,"rows":[{"place":1,"entry":2586046,"team":"suubaash","manager":"","points":69,"gross":69,"hit":0,"transfers":1,"bench":0,"chip":"3xc","captain":411,"captainPoints":18,"starters":[496,4,229,388,200,445,40,13,367,411,466]},{"place":2,"entry":7753170,"team":"Babaji","manager":"","points":59,"gross":59,"hit":0,"transfers":0,"bench":4,"chip":null,"captain":379,"captainPoints":26,"starters":[384,533,142,358,61,12,397,428,480,379,106]},{"place":3,"entry":2291806,"team":"21Loading","manager":"","points":56,"gross":56,"hit":0,"transfers":1,"bench":9,"chip":null,"captain":411,"captainPoints":18,"starters":[1,115,87,204,426,94,124,13,295,411,106]},{"place":4,"entry":967093,"team":"Saga FC","manager":"","points":56,"gross":56,"hit":0,"transfers":1,"bench":9,"chip":"3xc","captain":411,"captainPoints":18,"starters":[109,356,8,87,115,368,398,426,557,411,165]},{"place":5,"entry":3643090,"team":"Tabaki_XI","manager":"","points":56,"gross":56,"hit":0,"transfers":1,"bench":4,"chip":null,"captain":411,"captainPoints":18,"starters":[496,277,4,175,426,427,124,542,165,346,411]},{"place":6,"entry":1844688,"team":"Carrickonthewheel","manager":"","points":55,"gross":55,"hit":0,"transfers":2,"bench":3,"chip":null,"captain":411,"captainPoints":18,"starters":[109,8,173,418,368,426,427,367,124,165,411]},{"place":7,"entry":2542709,"team":"Binodp","manager":"","points":51,"gross":51,"hit":0,"transfers":1,"bench":7,"chip":null,"captain":411,"captainPoints":18,"starters":[226,112,200,61,8,12,40,398,155,26,411]},{"place":8,"entry":6005854,"team":"Dark Horse","manager":"","points":47,"gross":47,"hit":0,"transfers":1,"bench":15,"chip":null,"captain":411,"captainPoints":18,"starters":[28,61,112,418,12,15,260,236,457,411,165]},{"place":9,"entry":5950871,"team":"Falano","manager":"","points":42,"gross":42,"hit":0,"transfers":0,"bench":9,"chip":null,"captain":411,"captainPoints":18,"starters":[496,4,418,305,8,212,154,368,557,165,411]},{"place":10,"entry":6144939,"team":"Manish's Team","manager":"","points":35,"gross":35,"hit":0,"transfers":1,"bench":16,"chip":null,"captain":165,"captainPoints":2,"starters":[1,499,8,229,473,399,426,427,428,165,464]}],"ownership":{"496":3,"4":3,"229":2,"388":1,"200":2,"445":1,"40":2,"13":2,"367":2,"411":8,"466":1,"384":1,"533":1,"142":1,"358":1,"61":3,"12":3,"397":1,"428":2,"480":1,"379":1,"106":2,"1":2,"115":2,"87":2,"204":1,"426":5,"94":1,"124":3,"295":1,"109":2,"356":1,"8":5,"368":3,"398":2,"557":2,"165":6,"277":1,"175":1,"427":3,"542":1,"346":1,"173":1,"418":3,"226":1,"112":2,"155":1,"26":1,"28":1,"15":1,"260":1,"236":1,"457":1,"305":1,"212":1,"154":1,"499":1,"473":1,"399":1,"464":1},"playerPoints":{"496":6,"4":2,"229":3,"388":8,"200":2,"445":-1,"40":6,"13":5,"367":11,"411":9,"466":0,"384":7,"533":4,"142":1,"358":5,"61":0,"12":2,"397":6,"428":3,"480":3,"379":13,"106":2,"1":3,"115":4,"87":2,"204":15,"426":2,"94":2,"124":1,"295":2,"109":3,"356":6,"8":2,"368":3,"398":1,"557":5,"165":1,"277":6,"175":3,"427":8,"542":8,"346":1,"173":4,"418":2,"226":1,"112":8,"155":3,"26":8,"28":3,"15":10,"260":0,"236":2,"457":1,"305":1,"212":1,"154":1,"499":7,"473":1,"399":3,"464":1}},"4":{"finished":true,"rows":[{"place":1,"entry":5950871,"team":"Falano","manager":"","points":89,"gross":89,"hit":0,"transfers":2,"bench":10,"chip":null,"captain":165,"captainPoints":24,"starters":[496,4,115,305,8,212,426,368,557,165,411]},{"place":2,"entry":967093,"team":"Saga FC","manager":"","points":72,"gross":72,"hit":0,"transfers":0,"bench":1,"chip":null,"captain":165,"captainPoints":24,"starters":[109,356,8,115,542,368,398,426,557,411,165]},{"place":3,"entry":2542709,"team":"Binodp","manager":"","points":71,"gross":71,"hit":0,"transfers":1,"bench":3,"chip":null,"captain":411,"captainPoints":18,"starters":[226,112,200,330,8,12,40,398,155,26,411]},{"place":4,"entry":1844688,"team":"Carrickonthewheel","manager":"","points":70,"gross":70,"hit":0,"transfers":1,"bench":1,"chip":null,"captain":411,"captainPoints":18,"starters":[109,8,148,259,368,426,427,124,367,165,411]},{"place":5,"entry":2291806,"team":"21Loading","manager":"","points":69,"gross":69,"hit":0,"transfers":1,"bench":16,"chip":null,"captain":249,"captainPoints":4,"starters":[1,115,87,204,426,335,124,13,249,411,106]},{"place":6,"entry":6144939,"team":"Manish's Team","manager":"","points":69,"gross":69,"hit":0,"transfers":0,"bench":15,"chip":null,"captain":165,"captainPoints":24,"starters":[1,503,8,229,473,426,427,428,399,165,464]},{"place":7,"entry":2586046,"team":"suubaash","manager":"","points":67,"gross":67,"hit":0,"transfers":0,"bench":0,"chip":null,"captain":411,"captainPoints":18,"starters":[496,4,229,388,200,445,40,13,14,367,411]},{"place":8,"entry":3643090,"team":"Tabaki_XI","manager":"","points":63,"gross":63,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":411,"captainPoints":18,"starters":[496,173,277,4,426,427,262,542,165,411,346]},{"place":9,"entry":6005854,"team":"Dark Horse","manager":"","points":62,"gross":62,"hit":0,"transfers":1,"bench":5,"chip":null,"captain":411,"captainPoints":18,"starters":[572,8,418,112,12,15,236,457,411,165,464]},{"place":10,"entry":7753170,"team":"Babaji","manager":"","points":38,"gross":38,"hit":0,"transfers":0,"bench":2,"chip":null,"captain":379,"captainPoints":4,"starters":[384,533,142,358,61,12,397,428,480,379,106]}],"ownership":{"496":3,"4":3,"115":3,"305":1,"8":6,"212":1,"426":6,"368":3,"557":2,"165":6,"411":8,"109":2,"356":1,"542":2,"398":2,"226":1,"112":2,"200":2,"330":1,"12":3,"40":2,"155":1,"26":1,"148":1,"259":1,"427":3,"124":2,"367":2,"1":2,"87":1,"204":1,"335":1,"13":2,"249":1,"106":2,"503":1,"229":2,"473":1,"428":2,"399":1,"464":2,"388":1,"445":1,"14":1,"173":1,"277":1,"262":1,"346":1,"572":1,"418":1,"15":1,"236":1,"457":1,"384":1,"533":1,"142":1,"358":1,"61":1,"397":1,"480":1,"379":1},"playerPoints":{"496":7,"4":9,"115":11,"305":14,"8":6,"212":1,"426":2,"368":3,"557":3,"165":12,"411":9,"109":8,"356":8,"542":0,"398":-2,"226":6,"112":8,"200":1,"330":15,"12":8,"40":8,"155":2,"26":1,"148":0,"259":1,"427":2,"124":17,"367":1,"1":14,"87":1,"204":1,"335":3,"13":6,"249":2,"106":1,"503":6,"229":8,"473":2,"428":2,"399":1,"464":2,"388":6,"445":2,"14":1,"173":0,"277":2,"262":1,"346":10,"572":2,"418":1,"15":3,"236":2,"457":0,"384":7,"533":0,"142":1,"358":1,"61":3,"397":3,"480":8,"379":2}},"5":{"finished":true,"rows":[{"place":1,"entry":2291806,"team":"21Loading","manager":"","points":68,"gross":68,"hit":0,"transfers":0,"bench":13,"chip":null,"captain":411,"captainPoints":12,"starters":[1,87,259,204,426,335,124,13,94,249,411]},{"place":2,"entry":7753170,"team":"Babaji","manager":"","points":63,"gross":63,"hit":0,"transfers":0,"bench":0,"chip":null,"captain":379,"captainPoints":16,"starters":[384,533,358,61,562,12,397,428,480,379,106]},{"place":3,"entry":967093,"team":"Saga FC","manager":"","points":62,"gross":62,"hit":0,"transfers":2,"bench":1,"chip":null,"captain":411,"captainPoints":12,"starters":[109,356,8,115,87,368,557,124,426,68,411]},{"place":4,"entry":1844688,"team":"Carrickonthewheel","manager":"","points":59,"gross":59,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":411,"captainPoints":12,"starters":[109,8,173,391,259,368,426,427,367,124,411]},{"place":5,"entry":5950871,"team":"Falano","manager":"","points":49,"gross":49,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":165,"captainPoints":0,"starters":[496,4,115,305,8,542,426,557,124,411,346]},{"place":6,"entry":2586046,"team":"suubaash","manager":"","points":47,"gross":47,"hit":0,"transfers":0,"bench":0,"chip":null,"captain":411,"captainPoints":12,"starters":[496,4,229,388,200,445,40,13,14,367,411]},{"place":7,"entry":2542709,"team":"Binodp","manager":"","points":46,"gross":46,"hit":0,"transfers":1,"bench":7,"chip":null,"captain":411,"captainPoints":12,"starters":[226,112,200,330,8,61,12,40,367,26,411]},{"place":8,"entry":6144939,"team":"Manish's Team","manager":"","points":42,"gross":42,"hit":0,"transfers":0,"bench":3,"chip":null,"captain":165,"captainPoints":0,"starters":[1,503,8,229,499,426,427,428,399,452,464]},{"place":9,"entry":6005854,"team":"Dark Horse","manager":"","points":39,"gross":39,"hit":0,"transfers":1,"bench":6,"chip":null,"captain":411,"captainPoints":12,"starters":[572,8,391,112,418,12,15,236,457,411,464]},{"place":10,"entry":3643090,"team":"Tabaki_XI","manager":"","points":36,"gross":36,"hit":0,"transfers":1,"bench":0,"chip":null,"captain":411,"captainPoints":12,"starters":[496,277,4,173,426,427,262,542,165,346,411]}],"ownership":{"1":2,"87":2,"259":2,"204":1,"426":6,"335":1,"124":4,"13":2,"94":1,"249":1,"411":8,"384":1,"533":1,"358":1,"61":2,"562":1,"12":3,"397":1,"428":2,"480":1,"379":1,"106":1,"109":2,"356":1,"8":6,"115":2,"368":2,"557":2,"68":1,"173":2,"391":2,"427":3,"367":3,"496":3,"4":3,"305":1,"542":2,"346":2,"229":2,"388":1,"200":2,"445":1,"40":2,"14":1,"226":1,"112":2,"330":1,"26":1,"503":1,"499":1,"399":1,"452":1,"464":2,"572":1,"418":1,"15":1,"236":1,"457":1,"277":1,"262":1,"165":1},"playerPoints":{"1":1,"87":7,"259":4,"204":7,"426":2,"335":5,"124":14,"13":1,"94":9,"249":6,"411":6,"384":2,"533":0,"358":6,"61":2,"562":1,"12":2,"397":17,"428":10,"480":2,"379":8,"106":5,"109":6,"356":8,"8":1,"115":6,"368":2,"557":2,"68":2,"173":9,"391":4,"427":2,"367":3,"496":2,"4":1,"305":2,"542":5,"346":2,"229":14,"388":4,"200":3,"445":4,"40":2,"14":1,"226":8,"112":6,"330":5,"26":2,"503":1,"499":1,"399":8,"452":1,"464":0,"572":6,"418":2,"15":2,"236":3,"457":1,"277":1,"262":0,"165":0}}},"players":{"1":{"id":1,"name":"Raya","team":"ARS","pos":"GKP","price":6.1},"4":{"id":4,"name":"Gabriel","team":"ARS","pos":"DEF","price":8.0},"8":{"id":8,"name":"Calafiori","team":"ARS","pos":"DEF","price":5.8},"11":{"id":11,"name":"Mosquera","team":"ARS","pos":"DEF","price":5.3},"12":{"id":12,"name":"Saka","team":"ARS","pos":"MID","price":9.5},"13":{"id":13,"name":"Rice","team":"ARS","pos":"MID","price":7.4},"14":{"id":14,"name":"Eze","team":"ARS","pos":"MID","price":6.3},"15":{"id":15,"name":"\u00d8degaard","team":"ARS","pos":"MID","price":6.8},"26":{"id":26,"name":"Havertz","team":"ARS","pos":"FWD","price":7.6},"28":{"id":28,"name":"Martinez","team":"CHE","pos":"GKP","price":5.0},"40":{"id":40,"name":"Rogers","team":"CHE","pos":"MID","price":7.7},"61":{"id":61,"name":"Truffert","team":"BOU","pos":"DEF","price":5.4},"68":{"id":68,"name":"Tavernier","team":"BOU","pos":"MID","price":6.1},"87":{"id":87,"name":"Ajer","team":"BRE","pos":"DEF","price":4.5},"94":{"id":94,"name":"Schade","team":"BRE","pos":"MID","price":6.2},"106":{"id":106,"name":"Thiago","team":"BRE","pos":"FWD","price":7.8},"109":{"id":109,"name":"Verbruggen","team":"BHA","pos":"GKP","price":4.5},"110":{"id":110,"name":"Rushworth","team":"COV","pos":"GKP","price":4.5},"112":{"id":112,"name":"Van Hecke","team":"TOT","pos":"DEF","price":4.9},"115":{"id":115,"name":"De Cuyper","team":"BHA","pos":"DEF","price":4.9},"124":{"id":124,"name":"Gro\u00df","team":"BHA","pos":"MID","price":5.8},"138":{"id":138,"name":"Kostoulas","team":"BHA","pos":"FWD","price":5.6},"142":{"id":142,"name":"James","team":"CHE","pos":"DEF","price":5.4},"148":{"id":148,"name":"Hato","team":"CHE","pos":"DEF","price":4.5},"154":{"id":154,"name":"Palmer","team":"CHE","pos":"MID","price":9.7},"155":{"id":155,"name":"Enzo","team":"MCI","pos":"MID","price":6.9},"165":{"id":165,"name":"Jo\u00e3o Pedro","team":"CHE","pos":"FWD","price":7.7},"173":{"id":173,"name":"Thomas","team":"COV","pos":"DEF","price":4.0},"175":{"id":175,"name":"van Ewijk","team":"COV","pos":"DEF","price":4.0},"200":{"id":200,"name":"Lacroix","team":"CHE","pos":"DEF","price":5.9},"204":{"id":204,"name":"Mitchell","team":"CRY","pos":"DEF","price":4.5},"212":{"id":212,"name":"Hughes","team":"CRY","pos":"MID","price":4.4},"223":{"id":223,"name":"Mateta","team":"CRY","pos":"FWD","price":6.3},"226":{"id":226,"name":"Pickford","team":"EVE","pos":"GKP","price":5.5},"229":{"id":229,"name":"Tarkowski","team":"EVE","pos":"DEF","price":6.1},"236":{"id":236,"name":"Dewsbury-Hall","team":"EVE","pos":"MID","price":6.6},"249":{"id":249,"name":"Barry","team":"EVE","pos":"FWD","price":5.6},"250":{"id":250,"name":"Leno","team":"FUL","pos":"GKP","price":4.5},"259":{"id":259,"name":"Diop","team":"IPS","pos":"DEF","price":4.0},"260":{"id":260,"name":"Wilson","team":"LEE","pos":"MID","price":6.2},"262":{"id":262,"name":"Smith Rowe","team":"FUL","pos":"MID","price":5.4},"268":{"id":268,"name":"King","team":"FUL","pos":"MID","price":5.5},"277":{"id":277,"name":"Egan","team":"HUL","pos":"DEF","price":4.1},"295":{"id":295,"name":"McBurnie","team":"HUL","pos":"FWD","price":5.5},"305":{"id":305,"name":"Davis","team":"IPS","pos":"DEF","price":4.0},"316":{"id":316,"name":"Emersonn","team":"IPS","pos":"FWD","price":5.5},"330":{"id":330,"name":"Bogle","team":"LEE","pos":"DEF","price":4.6},"335":{"id":335,"name":"Stach","team":"LEE","pos":"MID","price":6.0},"346":{"id":346,"name":"Calvert-Lewin","team":"LEE","pos":"FWD","price":6.0},"350":{"id":350,"name":"A.Becker","team":"LIV","pos":"GKP","price":5.5},"356":{"id":356,"name":"Virgil","team":"LIV","pos":"DEF","price":6.5},"358":{"id":358,"name":"Kerkez","team":"LIV","pos":"DEF","price":5.4},"367":{"id":367,"name":"Gakpo","team":"LIV","pos":"MID","price":7.2},"368":{"id":368,"name":"Szoboszlai","team":"LIV","pos":"MID","price":7.0},"379":{"id":379,"name":"Isak","team":"LIV","pos":"FWD","price":9.1},"384":{"id":384,"name":"Donnarumma","team":"MCI","pos":"GKP","price":5.5},"385":{"id":385,"name":"Trafford","team":"LEE","pos":"GKP","price":5.0},"388":{"id":388,"name":"Gu\u00e9hi","team":"MCI","pos":"DEF","price":6.0},"391":{"id":391,"name":"Gvardiol","team":"MCI","pos":"DEF","price":5.7},"397":{"id":397,"name":"Semenyo","team":"MCI","pos":"MID","price":8.4},"398":{"id":398,"name":"Foden","team":"MCI","pos":"MID","price":6.9},"399":{"id":399,"name":"Cherki","team":"MCI","pos":"MID","price":7.8},"411":{"id":411,"name":"Haaland","team":"MCI","pos":"FWD","price":15.6},"418":{"id":418,"name":"Maguire","team":"MUN","pos":"DEF","price":4.9},"423":{"id":423,"name":"Shaw","team":"MUN","pos":"DEF","price":4.3},"426":{"id":426,"name":"B.Fernandes","team":"MUN","pos":"MID","price":11.9},"427":{"id":427,"name":"Mbeumo","team":"MUN","pos":"MID","price":7.9},"428":{"id":428,"name":"Cunha","team":"MUN","pos":"MID","price":7.9},"445":{"id":445,"name":"Thiaw","team":"NEW","pos":"DEF","price":5.0},"449":{"id":449,"name":"Hall","team":"NEW","pos":"DEF","price":5.3},"452":{"id":452,"name":"Bruno G.","team":"ARS","pos":"MID","price":6.7},"457":{"id":457,"name":"J.Murphy","team":"NEW","pos":"MID","price":5.9},"464":{"id":464,"name":"Wissa","team":"NEW","pos":"FWD","price":6.2},"466":{"id":466,"name":"Neave","team":"NEW","pos":"FWD","price":4.5},"473":{"id":473,"name":"Aina","team":"NFO","pos":"DEF","price":4.4},"480":{"id":480,"name":"Gibbs-White","team":"NFO","pos":"MID","price":8.0},"490":{"id":490,"name":"Wood","team":"NFO","pos":"FWD","price":5.8},"491":{"id":491,"name":"Igor Jesus","team":"NFO","pos":"FWD","price":5.8},"496":{"id":496,"name":"Kinsky","team":"TOT","pos":"GKP","price":4.5},"499":{"id":499,"name":"Pedro Porro","team":"TOT","pos":"DEF","price":5.4},"503":{"id":503,"name":"Van de Ven","team":"TOT","pos":"DEF","price":5.0},"533":{"id":533,"name":"Mukiele","team":"SUN","pos":"DEF","price":5.4},"542":{"id":542,"name":"E.Le F\u00e9e","team":"SUN","pos":"MID","price":5.7},"552":{"id":552,"name":"Brobbey","team":"SUN","pos":"FWD","price":5.7},"556":{"id":556,"name":"Targett","team":"HUL","pos":"DEF","price":4.0},"557":{"id":557,"name":"Tzolis","team":"ARS","pos":"MID","price":6.3},"562":{"id":562,"name":"Maeda","team":"IPS","pos":"MID","price":5.3},"569":{"id":569,"name":"Gonzalo","team":"FUL","pos":"FWD","price":6.0},"572":{"id":572,"name":"Tzolakis","team":"HUL","pos":"GKP","price":4.6}},"suggestions":{"GKP":[{"id":572,"name":"Tzolakis","team":"HUL","position":"GKP","price":4.6,"form":6.0,"ppg":6.8,"xgi90":0.0,"fdr":3,"owned":12.3,"score":0.7},{"id":1,"name":"Raya","team":"ARS","position":"GKP","price":6.1,"form":6.0,"ppg":6.0,"xgi90":0.0,"fdr":2.67,"owned":42.2,"score":0.659},{"id":109,"name":"Verbruggen","team":"BHA","position":"GKP","price":4.5,"form":4.6,"ppg":4.6,"xgi90":0.04,"fdr":3.33,"owned":21.7,"score":0.6521},{"id":350,"name":"A.Becker","team":"LIV","position":"GKP","price":5.5,"form":5.4,"ppg":5.4,"xgi90":0.0,"fdr":3,"owned":3.9,"score":0.564},{"id":250,"name":"Leno","team":"FUL","position":"GKP","price":4.5,"form":3.6,"ppg":3.6,"xgi90":0.0,"fdr":2,"owned":3.3,"score":0.4639},{"id":385,"name":"Trafford","team":"LEE","position":"GKP","price":5.0,"form":4.8,"ppg":5.6,"xgi90":0.0,"fdr":4,"owned":5.5,"score":0.4463},{"id":110,"name":"Rushworth","team":"COV","position":"GKP","price":4.5,"form":3.8,"ppg":3.2,"xgi90":0.0,"fdr":2.33,"owned":0.8,"score":0.4194},{"id":226,"name":"Pickford","team":"EVE","position":"GKP","price":5.5,"form":4.5,"ppg":5.0,"xgi90":0.0,"fdr":3.67,"owned":9.1,"score":0.4188}],"DEF":[{"id":115,"name":"De Cuyper","team":"BHA","position":"DEF","price":4.9,"form":7.6,"ppg":7.6,"xgi90":0.47,"fdr":3.33,"owned":27.0,"score":0.7716},{"id":330,"name":"Bogle","team":"LEE","position":"DEF","price":4.6,"form":9.0,"ppg":8.4,"xgi90":0.36,"fdr":4,"owned":6.7,"score":0.7404},{"id":391,"name":"Gvardiol","team":"MCI","position":"DEF","price":5.7,"form":7.4,"ppg":7.4,"xgi90":0.2,"fdr":3.33,"owned":26.5,"score":0.6276},{"id":229,"name":"Tarkowski","team":"EVE","position":"DEF","price":6.1,"form":9.2,"ppg":8.6,"xgi90":0.05,"fdr":3.67,"owned":15.6,"score":0.6263},{"id":449,"name":"Hall","team":"NEW","position":"DEF","price":5.3,"form":6.2,"ppg":6.2,"xgi90":0.21,"fdr":2.67,"owned":16.6,"score":0.6203},{"id":305,"name":"Davis","team":"IPS","position":"DEF","price":4.0,"form":5.8,"ppg":5.0,"xgi90":0.41,"fdr":3.33,"owned":6.9,"score":0.6012},{"id":8,"name":"Calafiori","team":"ARS","position":"DEF","price":5.8,"form":5.0,"ppg":5.8,"xgi90":0.27,"fdr":2.67,"owned":50.6,"score":0.5862},{"id":204,"name":"Mitchell","team":"CRY","position":"DEF","price":4.5,"form":5.8,"ppg":4.8,"xgi90":0.23,"fdr":2.67,"owned":6.0,"score":0.5737}],"MID":[{"id":124,"name":"Gro\u00df","team":"BHA","position":"MID","price":5.8,"form":9.4,"ppg":9.4,"xgi90":0.52,"fdr":3.33,"owned":27.1,"score":0.781},{"id":12,"name":"Saka","team":"ARS","position":"MID","price":9.5,"form":5.8,"ppg":6.4,"xgi90":0.91,"fdr":2.67,"owned":13.5,"score":0.6854},{"id":94,"name":"Schade","team":"BRE","position":"MID","price":6.2,"form":9.0,"ppg":7.8,"xgi90":0.37,"fdr":3.33,"owned":10.4,"score":0.6747},{"id":426,"name":"B.Fernandes","team":"MUN","position":"MID","price":11.9,"form":7.2,"ppg":6.2,"xgi90":0.77,"fdr":3,"owned":38.8,"score":0.6524},{"id":399,"name":"Cherki","team":"MCI","position":"MID","price":7.8,"form":6.8,"ppg":6.8,"xgi90":0.67,"fdr":3.33,"owned":28.2,"score":0.6207},{"id":367,"name":"Gakpo","team":"LIV","position":"MID","price":7.2,"form":6.4,"ppg":6.4,"xgi90":0.58,"fdr":3,"owned":12.6,"score":0.6133},{"id":268,"name":"King","team":"FUL","position":"MID","price":5.5,"form":4.8,"ppg":4.8,"xgi90":0.43,"fdr":2,"owned":2.4,"score":0.5907},{"id":480,"name":"Gibbs-White","team":"NFO","position":"MID","price":8.0,"form":6.5,"ppg":5.6,"xgi90":0.59,"fdr":3,"owned":15.7,"score":0.5881}],"FWD":[{"id":411,"name":"Haaland","team":"MCI","position":"FWD","price":15.6,"form":7.8,"ppg":7.8,"xgi90":0.99,"fdr":3.33,"owned":73.6,"score":0.8019},{"id":379,"name":"Isak","team":"LIV","position":"FWD","price":9.1,"form":6.6,"ppg":6.6,"xgi90":0.79,"fdr":3,"owned":22.3,"score":0.7193},{"id":552,"name":"Brobbey","team":"SUN","position":"FWD","price":5.7,"form":5.5,"ppg":4.8,"xgi90":0.68,"fdr":2.33,"owned":6.7,"score":0.662},{"id":138,"name":"Kostoulas","team":"BHA","position":"FWD","price":5.6,"form":5.6,"ppg":5.6,"xgi90":0.36,"fdr":3.33,"owned":3.3,"score":0.5386},{"id":316,"name":"Emersonn","team":"IPS","position":"FWD","price":5.5,"form":4.2,"ppg":5.2,"xgi90":0.49,"fdr":3.33,"owned":3.4,"score":0.4811},{"id":346,"name":"Calvert-Lewin","team":"LEE","position":"FWD","price":6.0,"form":5.2,"ppg":4.4,"xgi90":0.66,"fdr":4,"owned":25.1,"score":0.4486},{"id":569,"name":"Gonzalo","team":"FUL","position":"FWD","price":6.0,"form":2.8,"ppg":2.8,"xgi90":0.61,"fdr":2,"owned":3.8,"score":0.4329},{"id":249,"name":"Barry","team":"EVE","position":"FWD","price":5.6,"form":3.0,"ppg":4.0,"xgi90":0.79,"fdr":3.67,"owned":8.1,"score":0.3903}]},"horizon":3,"upcoming":{"6":{"deadline":"2026-10-10T10:00:00Z","games":[{"kickoff":"2026-10-10T11:30:00Z","home":"ARS","away":"LEE","homeName":"Arsenal","awayName":"Leeds","homeFdr":2,"awayFdr":5},{"kickoff":"2026-10-10T14:00:00Z","home":"AVL","away":"BRE","homeName":"Aston Villa","awayName":"Brentford","homeFdr":3,"awayFdr":4},{"kickoff":"2026-10-10T14:00:00Z","home":"CHE","away":"BOU","homeName":"Chelsea","awayName":"Bournemouth","homeFdr":3,"awayFdr":4},{"kickoff":"2026-10-10T14:00:00Z","home":"IPS","away":"FUL","homeName":"Ipswich Town","awayName":"Fulham","homeFdr":2,"awayFdr":2},{"kickoff":"2026-10-10T14:00:00Z","home":"SUN","away":"BHA","homeName":"Sunderland","awayName":"Brighton","homeFdr":2,"awayFdr":3},{"kickoff":"2026-10-10T16:30:00Z","home":"MUN","away":"TOT","homeName":"Man Utd","awayName":"Spurs","homeFdr":3,"awayFdr":4},{"kickoff":"2026-10-11T13:00:00Z","home":"CRY","away":"NFO","homeName":"Crystal Palace","awayName":"Nott'm Forest","homeFdr":3,"awayFdr":3},{"kickoff":"2026-10-11T13:00:00Z","home":"HUL","away":"EVE","homeName":"Hull City","awayName":"Everton","homeFdr":3,"awayFdr":2},{"kickoff":"2026-10-11T15:30:00Z","home":"LIV","away":"MCI","homeName":"Liverpool","awayName":"Man City","homeFdr":4,"awayFdr":4},{"kickoff":"2026-10-12T19:00:00Z","home":"COV","away":"NEW","homeName":"Coventry City","awayName":"Newcastle","homeFdr":2,"awayFdr":2}]},"7":{"deadline":"2026-10-17T10:00:00Z","games":[{"kickoff":"2026-10-17T11:30:00Z","home":"EVE","away":"CHE","homeName":"Everton","awayName":"Chelsea","homeFdr":4,"awayFdr":3},{"kickoff":"2026-10-17T14:00:00Z","home":"BRE","away":"LIV","homeName":"Brentford","awayName":"Liverpool","homeFdr":4,"awayFdr":3},{"kickoff":"2026-10-17T14:00:00Z","home":"FUL","away":"HUL","homeName":"Fulham","awayName":"Hull City","homeFdr":2,"awayFdr":3},{"kickoff":"2026-10-17T14:00:00Z","home":"MCI","away":"IPS","homeName":"Man City","awayName":"Ipswich Town","homeFdr":2,"awayFdr":5},{"kickoff":"2026-10-17T16:30:00Z","home":"NEW","away":"AVL","homeName":"Newcastle","awayName":"Aston Villa","homeFdr":3,"awayFdr":3},{"kickoff":"2026-10-18T13:00:00Z","home":"BOU","away":"SUN","homeName":"Bournemouth","awayName":"Sunderland","homeFdr":2,"awayFdr":3},{"kickoff":"2026-10-18T13:00:00Z","home":"BHA","away":"CRY","homeName":"Brighton","awayName":"Crystal Palace","homeFdr":3,"awayFdr":3},{"kickoff":"2026-10-18T13:00:00Z","home":"LEE","away":"MUN","homeName":"Leeds","awayName":"Man Utd","homeFdr":4,"awayFdr":3},{"kickoff":"2026-10-18T15:30:00Z","home":"NFO","away":"ARS","homeName":"Nott'm Forest","awayName":"Arsenal","homeFdr":4,"awayFdr":3},{"kickoff":"2026-10-19T19:00:00Z","home":"TOT","away":"COV","homeName":"Spurs","awayName":"Coventry City","homeFdr":2,"awayFdr":3}]},"8":{"deadline":"2026-10-23T17:30:00Z","games":[{"kickoff":"2026-10-23T19:00:00Z","home":"IPS","away":"NFO","homeName":"Ipswich Town","awayName":"Nott'm Forest","homeFdr":3,"awayFdr":2},{"kickoff":"2026-10-24T11:30:00Z","home":"AVL","away":"MCI","homeName":"Aston Villa","awayName":"Man City","homeFdr":4,"awayFdr":4},{"kickoff":"2026-10-24T14:00:00Z","home":"ARS","away":"EVE","homeName":"Arsenal","awayName":"Everton","homeFdr":3,"awayFdr":5},{"kickoff":"2026-10-24T14:00:00Z","home":"COV","away":"FUL","homeName":"Coventry City","awayName":"Fulham","homeFdr":2,"awayFdr":2},{"kickoff":"2026-10-24T16:30:00Z","home":"CHE","away":"TOT","homeName":"Chelsea","awayName":"Spurs","homeFdr":3,"awayFdr":4},{"kickoff":"2026-10-25T14:00:00Z","home":"CRY","away":"NEW","homeName":"Crystal Palace","awayName":"Newcastle","homeFdr":2,"awayFdr":3},{"kickoff":"2026-10-25T14:00:00Z","home":"HUL","away":"BRE","homeName":"Hull City","awayName":"Brentford","homeFdr":3,"awayFdr":2},{"kickoff":"2026-10-25T14:00:00Z","home":"LIV","away":"BHA","homeName":"Liverpool","awayName":"Brighton","homeFdr":2,"awayFdr":4},{"kickoff":"2026-10-25T14:00:00Z","home":"MUN","away":"BOU","homeName":"Man Utd","awayName":"Bournemouth","homeFdr":3,"awayFdr":4},{"kickoff":"2026-10-25T16:30:00Z","home":"SUN","away":"LEE","homeName":"Sunderland","awayName":"Leeds","homeFdr":2,"awayFdr":3}]}},"reminder":"GME FANTASY LEAGUE - GAMEWEEK 6\n\nDeadline KST: Sat 10 Oct, 07:00 PM\nDeadline NPT: Sat 10 Oct, 03:45 PM\n(18 days 9 hours left)\n\n7,000 KRW to the highest score this week.\n\nTABLE\n 1. Carrickonthewheel     358\n 2. 21Loading             339\n 3. Saga FC               328\n 4. suubaash              315\n 5. Falano                310\n 6. Tabaki_XI             304\n 7. Manish's Team         298\n 8. Binodp                285\n 9. Dark Horse            265\n10. Babaji                257\n\nFLAGGED IN OUR SQUADS - CHECK BEFORE THE DEADLINE\n  Jo\u00e3o Pedro (CHE) - 75% - owned by 6\n  Rice (ARS) - 75% - owned by 2\n  Furo (BRE) - out - owned by 1\n  Heaton (MUN) - out - owned by 1\n  James (CHE) - 75% - owned by 1\n  Neave (NEW) - out - owned by 1\n  Osula (NEW) - out - owned by 1\n  Pedro Porro (TOT) - 75% - owned by 1\n\nGW6 FIXTURES\n  Sat 10 Oct 20:30  ARS v LEE\n  Sat 10 Oct 23:00  AVL v BRE\n  Sat 10 Oct 23:00  CHE v BOU\n  Sat 10 Oct 23:00  IPS v FUL\n  Sat 10 Oct 23:00  SUN v BHA\n  Sun 11 Oct 01:30  MUN v TOT\n  Sun 11 Oct 22:00  CRY v NFO\n  Sun 11 Oct 22:00  HUL v EVE\n  Mon 12 Oct 00:30  LIV v MCI\n  Tue 13 Oct 04:00  COV v NEW\n\nSet your team and captain before the deadline.","prizes":{"weeks":[{"gw":1,"points":60,"winners":[{"entry":2586046,"team":"suubaash"},{"entry":6144939,"team":"Manish's Team"}],"pot":7000,"each":3500,"tied":true},{"gw":2,"points":117,"winners":[{"entry":1844688,"team":"Carrickonthewheel"}],"pot":7000,"each":7000,"tied":false},{"gw":3,"points":69,"winners":[{"entry":2586046,"team":"suubaash"}],"pot":7000,"each":7000,"tied":false},{"gw":4,"points":89,"winners":[{"entry":5950871,"team":"Falano"}],"pot":7000,"each":7000,"tied":false},{"gw":5,"points":68,"winners":[{"entry":2291806,"team":"21Loading"}],"pot":7000,"each":7000,"tied":false}],"extremes":{"highest":{"gw":2,"entry":1844688,"team":"Carrickonthewheel","points":117},"lowest":{"gw":1,"entry":7753170,"team":"Babaji","points":29},"exact111":[]},"rows":[{"entry":1844688,"team":"Carrickonthewheel","rank":1,"banked":7000,"provisional":120000,"projected":127000,"net":77000},{"entry":2291806,"team":"21Loading","rank":2,"banked":7000,"provisional":75000,"projected":82000,"net":32000},{"entry":5950871,"team":"Falano","rank":5,"banked":7000,"provisional":15000,"projected":22000,"net":-28000},{"entry":2586046,"team":"suubaash","rank":4,"banked":10500,"provisional":0,"projected":10500,"net":-39500},{"entry":7753170,"team":"Babaji","rank":10,"banked":0,"provisional":10000,"projected":10000,"net":-40000},{"entry":6144939,"team":"Manish's Team","rank":7,"banked":3500,"provisional":0,"projected":3500,"net":-46500},{"entry":967093,"team":"Saga FC","rank":3,"banked":0,"provisional":0,"projected":0,"net":-50000},{"entry":3643090,"team":"Tabaki_XI","rank":6,"banked":0,"provisional":0,"projected":0,"net":-50000},{"entry":2542709,"team":"Binodp","rank":8,"banked":0,"provisional":0,"projected":0,"net":-50000},{"entry":6005854,"team":"Dark Horse","rank":9,"banked":0,"provisional":0,"projected":0,"net":-50000}],"entry":50000,"pool":500000,"paidOut":35000,"weeklyRemaining":235000,"specials":{"highest":10000,"exact111":10000,"lowest":10000,"fifth":15000},"champion":110000,"runnerUp":75000,"weeklyPrize":7000,"finalBonus":11000}}</script>
+<script>
+"use strict";
+
+const D = JSON.parse(document.getElementById("fpl-data").textContent);
+const Z = D.prizes;
+const P = D.players;
+const ME = D.me;
+const GWS = D.playedGws;
+const HAS_NAMES = D.managers.some(m => m.manager);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+const krw = n => n.toLocaleString("en-US");
+const ord = n => n + (["th", "st", "nd", "rd"][(n % 100 - 20) % 10] || ["th", "st", "nd", "rd"][n % 100] || "th");
+const fdrBand = v => (v <= 2 ? "easy" : v >= 4 ? "hard" : "mid");
+
+/* Capabilities exist only inside the claude.ai viewer. On localhost the page
+   falls back to browser storage and an ordinary download, so it works either way. */
+const capability = async name =>
+  (window.claude && window.claude.use) ? await window.claude.use(name) : null;
+
+/* ---------------- tabs ---------------- */
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "gameweeks", label: "Gameweeks" },
+  { id: "planning", label: "Planning" },
+  { id: "money", label: "Money" },
+];
+const tabBar = $("tabs");
+tabBar.innerHTML = TABS.map((t, i) =>
+  `<button role="tab" data-tab="${t.id}" aria-selected="${i === 0}"
+     aria-controls="tab-${t.id}">${t.label}</button>`).join("");
+
+function showTab(id) {
+  TABS.forEach(t => { $("tab-" + t.id).hidden = t.id !== id; });
+  tabBar.querySelectorAll("button").forEach(b =>
+    b.setAttribute("aria-selected", b.dataset.tab === id));
+  try { localStorage.setItem("gme-tab", id); } catch (e) { /* private mode */ }
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+tabBar.addEventListener("click", e => {
+  const b = e.target.closest("button[data-tab]");
+  if (b) showTab(b.dataset.tab);
+});
+try {
+  const saved = localStorage.getItem("gme-tab");
+  if (saved && TABS.some(t => t.id === saved)) showTab(saved);
+} catch (e) { /* private mode */ }
+
+/* ---------------- header ---------------- */
+$("league-name").textContent = D.league.name;
+$("league-sub").textContent = `${D.managers.length} managers, gameweek ${D.currentGw} of 38`;
+$("gen-time").textContent = new Date(D.generated)
+  .toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+const deadline = D.nextDeadline ? new Date(D.nextDeadline) : null;
+$("deadline-label").textContent = `GW${D.nextGw} deadline`;
+function tick() {
+  if (!deadline) return;
+  const ms = deadline - new Date();
+  if (ms <= 0) { $("countdown").textContent = "closed"; return; }
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60;
+  $("countdown").textContent = d > 0
+    ? `${d}d ${String(h).padStart(2, "0")}h`
+    : `${h}h ${String(m).padStart(2, "0")}m`;
+}
+tick(); setInterval(tick, 30000);
+
+/* ---------------- season stats ---------------- */
+const meRow = D.standings.find(s => s.entry === ME);
+const leader = D.standings[0];
+const myWeeks = GWS.map(gw => D.season[gw].find(r => r.entry === ME));
+const myGwRows = GWS.map(gw => D.gameweeks[gw].rows.find(r => r.entry === ME));
+const best = myWeeks.reduce((a, b) => (b.points > a.points ? b : a));
+const worst = myWeeks.reduce((a, b) => (b.points < a.points ? b : a));
+const bestGw = GWS[myWeeks.indexOf(best)], worstGw = GWS[myWeeks.indexOf(worst)];
+const benched = myGwRows.reduce((s, r) => s + r.bench, 0);
+const hits = myGwRows.reduce((s, r) => s + r.hit, 0);
+const wins = GWS.filter(gw => D.gameweeks[gw].rows[0].entry === ME).length;
+const avgPlace = myGwRows.reduce((s, r) => s + r.place, 0) / myGwRows.length;
+const gap = leader.total - meRow.total;
+
+$("standing").innerHTML = `
+  <div class="pos num">${meRow.rank}<sup>${ord(meRow.rank).slice(String(meRow.rank).length)}</sup></div>
+  <div class="who">
+    <h2>${esc(meRow.team)}</h2>
+    <p>${HAS_NAMES ? esc(meRow.manager) + " &middot; " : ""}${meRow.total} points &middot;
+       ${gap === 0 ? "leading the league" : `${gap} behind ${esc(leader.team)}`}</p>
+  </div>
+  <div class="verdict">
+    Best week <b>GW${bestGw} (${best.points})</b>, worst <b>GW${worstGw} (${worst.points})</b>.
+    You have left <b>${benched} points on the bench</b> and paid <b>${hits} in hits</b>.
+  </div>`;
+
+$("stats").innerHTML = [
+  { k: "Position", v: meRow.rank, n: `of ${D.managers.length}` },
+  { k: "Total points", v: meRow.total, n: `${(meRow.total / GWS.length).toFixed(1)} per week` },
+  { k: "Gap to top", v: gap === 0 ? "-" : "&minus;" + gap, n: gap === 0 ? "you lead" : esc(leader.team), cls: gap === 0 ? "good" : "bad" },
+  { k: "Best gameweek", v: best.points, n: `gameweek ${bestGw}` },
+  { k: "Left on bench", v: benched, n: "never counted" },
+  { k: "Gameweeks won", v: wins, n: `avg finish ${avgPlace.toFixed(1)}` },
+].map(t => `<div class="stat"><div class="k">${t.k}</div>
+  <div class="v num ${t.cls || ""}">${t.v}</div><div class="n">${t.n}</div></div>`).join("");
+
+/* ---------------- title race ---------------- */
+const N = D.managers.length;
+// The plot widens with the season so gameweeks never crowd; the panel scrolls.
+const PLOT_W = Math.max(320, 15 * Math.max(1, GWS.length - 1));
+const VB = { w: 34 + PLOT_W + 268, h: 40 + N * 27, l: 34, r: 268, t: 26, b: 30 };
+const STEP = Math.max(1, Math.ceil(30 / (PLOT_W / Math.max(1, GWS.length - 1))));
+const px = i => VB.l + (GWS.length === 1 ? 0 : i * PLOT_W / (GWS.length - 1));
+const py = pos => VB.t + (pos - 1) * ((VB.h - VB.t - VB.b) / Math.max(1, N - 1));
+
+(function bump() {
+  const series = D.managers.map(m => {
+    const mine = D.positions[m.entry] || {};
+    // A manager who joined mid-season has no position for the earlier
+    // gameweeks: start a new segment rather than drawing through the gap.
+    let path = "", open = false, lastGw = null;
+    GWS.forEach((gw, i) => {
+      const pos = mine[gw];
+      if (pos == null) { open = false; return; }
+      path += `${open ? "L" : "M"}${px(i).toFixed(1)},${py(pos).toFixed(1)}`;
+      open = true; lastGw = gw;
+    });
+    return {
+      entry: m.entry, team: m.team, path,
+      pts: GWS.map(gw => D.season[gw].find(r => r.entry === m.entry)),
+      final: lastGw == null ? null : mine[lastGw],
+      lastIndex: lastGw == null ? -1 : GWS.indexOf(lastGw),
+      played: Object.keys(mine).length,
+    };
+  }).filter(t => t.played > 0);
+
+  let s = `<svg viewBox="0 0 ${VB.w} ${VB.h}" role="img" aria-label="League position by gameweek">`;
+  for (let p = 1; p <= N; p++) {
+    s += `<line x1="${VB.l}" y1="${py(p)}" x2="${VB.w - VB.r + 6}" y2="${py(p)}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${VB.l - 9}" y="${py(p) + 4}" text-anchor="end" font-size="11" fill="var(--ink-3)"
+           font-family="IBM Plex Mono, monospace">${p}</text>`;
+  }
+  GWS.forEach((gw, i) => {
+    // Always label the last gameweek, and drop any stepped label that would
+    // land on top of it.
+    const last = i === GWS.length - 1;
+    if (!last && (i % STEP !== 0 || GWS.length - 1 - i < STEP)) return;
+    s += `<text x="${px(i)}" y="${VB.h - 9}" text-anchor="middle" font-size="11" fill="var(--ink-3)"
+           font-family="IBM Plex Mono, monospace">GW${gw}</text>`;
+  });
+  series.forEach(t => {
+    const mine = t.entry === ME;
+    s += `<path class="bump-line" data-e="${t.entry}" d="${t.path}"
+           stroke="${mine ? "var(--s1)" : "var(--ink-3)"}" stroke-width="${mine ? 2.5 : 1.6}"/>`;
+  });
+  series.forEach(t => {
+    const mine = t.entry === ME, cx = px(t.lastIndex), cy = py(t.final);
+    s += `<circle cx="${cx}" cy="${cy}" r="${mine ? 4.5 : 3.5}"
+           fill="${mine ? "var(--s1)" : "var(--ink-3)"}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `<text x="${cx + 12}" y="${cy + 4}" font-size="12.5" font-family="Archivo, sans-serif"
+           font-weight="${mine ? 700 : 500}" fill="${mine ? "var(--s1)" : "var(--ink-2)"}">${esc(t.team)}</text>`;
+  });
+  series.forEach(t => {
+    s += `<path class="bump-hit" data-e="${t.entry}" d="${t.path}"><title>${esc(t.team)}</title></path>`;
+  });
+  $("bump-scroll").innerHTML = s + `</svg>`;
+
+  const svg = $("bump-scroll").querySelector("svg"), tip = $("bump-tip");
+  const wrap = svg.closest(".tipwrap");
+  const highlight = entry => {
+    svg.classList.toggle("dim", entry != null);
+    svg.querySelectorAll(".bump-line").forEach(n => n.classList.toggle("on", n.dataset.e == entry));
+  };
+  svg.querySelectorAll(".bump-hit").forEach(hit => {
+    const show = ev => {
+      const t = series.find(x => x.entry == hit.dataset.e);
+      highlight(t.entry);
+      const r = wrap.getBoundingClientRect();
+      const last = t.pts.filter(Boolean).pop();
+      tip.innerHTML = `<b>${esc(t.team)}</b> &middot; ${ord(t.final)}<br>
+        <span class="num">${last ? last.total : 0} pts</span>`;
+      tip.style.left = (ev.clientX - r.left) + "px";
+      tip.style.top = (ev.clientY - r.top) + "px";
+      tip.classList.add("on");
+    };
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerenter", show);
+    hit.addEventListener("pointerleave", () => { highlight(null); tip.classList.remove("on"); });
+  });
+
+  let rows = `<table><thead><tr><th>Team</th>` +
+    GWS.map(g => `<th class="r">GW${g}</th>`).join("") + `</tr></thead><tbody>`;
+  series.slice().sort((a, b) => a.final - b.final).forEach(t => {
+    const mine = D.positions[t.entry] || {};
+    rows += `<tr class="${t.entry === ME ? "me" : ""}"><td class="team">${esc(t.team)}</td>` +
+      GWS.map(g => `<td class="r num">${mine[g] == null ? "-" : mine[g]}</td>`).join("") + `</tr>`;
+  });
+  $("bump-table").innerHTML = rows + `</tbody></table>`;
+})();
+
+/* ---------------- gameweek board ---------------- */
+let activeGw = GWS[GWS.length - 1];
+const gwChips = $("gw-chips");
+gwChips.innerHTML = GWS.map(g =>
+  `<button class="chip" data-gw="${g}" aria-pressed="${g === activeGw}">GW${g}</button>`).join("");
+gwChips.addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  activeGw = +b.dataset.gw;
+  gwChips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === b));
+  renderGw();
+});
+
+function renderGw() {
+  const g = D.gameweeks[activeGw], rows = g.rows, win = rows[0];
+  const margin = rows.length > 1 ? win.points - rows[1].points : 0;
+  const totals = Object.fromEntries(D.season[activeGw].map(x => [x.entry, x.total]));
+
+  $("gw-caption").innerHTML = `<b>${esc(win.team)}</b> won with ${win.points}` +
+    (margin ? `, ${margin} clear of ${esc(rows[1].team)}` : "") +
+    `. <b>GW</b> is that week; <b>Season</b> is the running total.`;
+
+  let t = `<table><thead><tr><th>#</th><th>Team</th>${HAS_NAMES ? "<th>Manager</th>" : ""}
+    <th class="r">GW</th><th class="r">Season</th><th class="r">Hit</th>
+    <th class="r">Bench</th><th>Captain</th><th class="r">C pts</th></tr></thead><tbody>`;
+  rows.forEach(r => {
+    const cap = P[r.captain];
+    t += `<tr class="${r.entry === ME ? "me" : ""}">
+      <td class="rank num">${r.place}</td>
+      <td class="team">${esc(r.team)}${r.place === 1 ? ' <span class="badge win">win</span>' : ""}
+        ${r.chip ? `<span class="badge alt">${esc(r.chip)}</span>` : ""}</td>
+      ${HAS_NAMES ? `<td style="color:var(--ink-3)">${esc(r.manager)}</td>` : ""}
+      <td class="r num" style="font-weight:700">${r.points}</td>
+      <td class="r num" style="color:var(--ink-2)">${totals[r.entry] ?? "-"}</td>
+      <td class="r num ${r.hit ? "neg" : "zero"}">${r.hit ? "&minus;" + r.hit : "-"}</td>
+      <td class="r num ${r.bench >= 10 ? "neg" : "zero"}">${r.bench}</td>
+      <td>${cap ? esc(cap.name) : "-"}</td>
+      <td class="r num ${r.captainPoints === 0 ? "neg" : ""}">${r.captainPoints}</td>
+    </tr>`;
+  });
+  $("gw-table").innerHTML = t + `</tbody></table>`;
+
+  const max = Math.max(...rows.map(r => r.points));
+  $("gw-bars").innerHTML = rows.map(r => `
+    <div class="bar-row ${r.entry === ME ? "me" : ""}">
+      <span class="nm">${esc(r.team)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${Math.max(2, r.points / max * 100)}%"></span></span>
+      <span class="val num">${r.points}</span>
+    </div>`).join("");
+
+  renderDiff();
+}
+
+function renderDiff() {
+  const g = D.gameweeks[activeGw], own = g.ownership, pts = g.playerPoints;
+  const mine = g.rows.find(r => r.entry === ME);
+  const started = new Set(mine.starters);
+
+  const myDiff = mine.starters.filter(p => own[p] === 1).sort((a, b) => (pts[b] || 0) - (pts[a] || 0));
+  const missed = Object.keys(own).filter(p => own[p] === 1 && !started.has(+p))
+    .sort((a, b) => (pts[b] || 0) - (pts[a] || 0)).slice(0, 7);
+  const gained = myDiff.reduce((s, p) => s + (pts[p] || 0), 0);
+  const lost = missed.reduce((s, p) => s + (pts[p] || 0), 0);
+
+  const item = p => {
+    const pl = P[p] || { name: "?", team: "", pos: "" };
+    return `<li><span class="pos">${pl.pos}</span><span>${esc(pl.name)}</span>
+      <span class="club">${esc(pl.team)}</span><span class="p">${pts[p] || 0}</span></li>`;
+  };
+  $("diff-caption").innerHTML =
+    `Gameweek ${activeGw}. Yours returned <b>${gained}</b>; the best you missed returned <b>${lost}</b>.`;
+  $("diff-mine").innerHTML = myDiff.length
+    ? `<ul class="dlist">${myDiff.map(item).join("")}</ul>`
+    : `<p class="empty">Nothing - your XI was the league template.</p>`;
+  $("diff-theirs").innerHTML = missed.length
+    ? `<ul class="dlist">${missed.map(item).join("")}</ul>`
+    : `<p class="empty">Nobody else had a differential either.</p>`;
+}
+
+/* ---------------- planning ---------------- */
+const UP = Object.keys(D.upcoming).map(Number).sort((a, b) => a - b);
+let activeUp = UP[0];
+const upChips = $("up-chips");
+upChips.innerHTML = UP.map(g =>
+  `<button class="chip" data-gw="${g}" aria-pressed="${g === activeUp}">GW${g}</button>`).join("");
+upChips.addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  activeUp = +b.dataset.gw;
+  upChips.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === b));
+  renderUpcoming();
+});
+
+function renderUpcoming() {
+  const u = D.upcoming[activeUp], dl = new Date(u.deadline);
+  const left = dl - new Date();
+  const days = Math.floor(left / 864e5), hrs = Math.floor(left / 36e5) % 24;
+  $("up-caption").innerHTML = `Deadline <b>${dl.toLocaleString(undefined,
+    { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</b>` +
+    (left > 0 ? ` &middot; ${days}d ${hrs}h to go &middot; your local time` : " &middot; closed") +
+    `. Each club carries its own difficulty for the same match: ` +
+    (u.games.length ? (() => {
+      // Show the clearest mismatch in the round as the worked example.
+      const g = u.games.reduce((a, b) =>
+        Math.abs(b.homeFdr - b.awayFdr) > Math.abs(a.homeFdr - a.awayFdr) ? b : a);
+      const easier = g.homeFdr <= g.awayFdr ? g : { homeName: g.awayName };
+      const harder = g.homeFdr <= g.awayFdr ? { awayName: g.awayName } : { awayName: g.homeName };
+      return `<b>${esc(g.home)} ${g.homeFdr} v ${esc(g.away)} ${g.awayFdr}</b> is an easy game
+        for ${esc(easier.homeName)} and a hard one for ${esc(harder.awayName)}.`;
+    })() : "");
+  $("up-fixtures").innerHTML = u.games.map(g => {
+    const ko = new Date(g.kickoff);
+    return `<div class="fx">
+      <span class="ko">${ko.toLocaleString(undefined, { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+      <span class="tm">${esc(g.home)}</span><span class="fdr ${fdrBand(g.homeFdr)}">${g.homeFdr}</span>
+      <span class="v">v</span>
+      <span class="tm">${esc(g.away)}</span><span class="fdr ${fdrBand(g.awayFdr)}">${g.awayFdr}</span>
+    </div>`;
+  }).join("");
+}
+
+const POSITIONS = ["GKP", "DEF", "MID", "FWD"];
+let activePos = "MID";
+const seg = $("pos-seg");
+seg.innerHTML = POSITIONS.filter(p => D.suggestions[p]).map(p =>
+  `<button data-pos="${p}" aria-pressed="${p === activePos}">${p}</button>`).join("");
+seg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  activePos = b.dataset.pos;
+  seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderPicks();
+});
+
+function renderPicks() {
+  const list = D.suggestions[activePos] || [];
+  let t = `<table><thead><tr><th>Player</th><th>Club</th><th class="r">&pound;m</th>
+    <th class="r">Form</th><th class="r">xGI/90</th><th class="r">FDR</th>
+    <th class="r">Owned</th></tr></thead><tbody>`;
+  list.forEach(p => {
+    const band = p.fdr <= 2.6 ? "easy" : p.fdr >= 3.6 ? "hard" : "mid";
+    t += `<tr><td class="team">${esc(p.name)}</td>
+      <td style="color:var(--ink-3)">${esc(p.team)}</td>
+      <td class="r num">${p.price.toFixed(1)}</td>
+      <td class="r num" style="font-weight:600">${p.form.toFixed(1)}</td>
+      <td class="r num">${p.xgi90.toFixed(2)}</td>
+      <td class="r"><span class="fdr ${band}">${p.fdr.toFixed(1)}</span></td>
+      <td class="r num" style="color:var(--ink-3)">${p.owned.toFixed(1)}%</td></tr>`;
+  });
+  $("pick-table").innerHTML = t + `</tbody></table>`;
+  $("pick-caption").innerHTML =
+    `Next ${D.horizon} gameweeks from GW${D.nextGw}, ranked within position on form,
+     expected goal involvement, fixtures and value. Injured and doubtful players excluded.`;
+}
+
+$("remind-text").textContent = D.reminder;
+$("copy-btn").addEventListener("click", async e => {
+  const btn = e.currentTarget, original = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(D.reminder);
+    btn.textContent = "Copied";
+  } catch (err) {
+    const r = document.createRange();
+    r.selectNodeContents($("remind-text"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    btn.textContent = "Selected - press Cmd+C";
+  }
+  setTimeout(() => { btn.textContent = original; }, 2500);
+});
+
+/* ---------------- money ---------------- */
+const PAY_LINES = [];
+Z.weeks.forEach(w => w.winners.forEach(win => PAY_LINES.push({
+  id: `gw${w.gw}-${win.entry}`, gw: w.gw, entry: win.entry, team: win.team,
+  amount: w.each, points: w.points, tied: w.tied,
+})));
+const RESERVED_SPECIALS = Object.values(Z.specials).reduce((a, b) => a + b, 0);
+const RESERVED_PODIUM = Z.champion + Z.runnerUp;
+const LOCAL_KEY = "gme-payments-v1";
+
+let paidIds = new Set();
+let store = null;          // the artifact's shared store, when there is one
+let mode = "loading";      // loading | shared | local | readonly
+
+function books() {
+  const paidOut = PAY_LINES.filter(l => paidIds.has(l.id)).reduce((a, l) => a + l.amount, 0);
+  const dueNow = PAY_LINES.filter(l => !paidIds.has(l.id)).reduce((a, l) => a + l.amount, 0);
+  const reserved = Z.weeklyRemaining + RESERVED_SPECIALS + RESERVED_PODIUM;
+  const balance = Z.pool - paidOut;
+  return { paidOut, dueNow, reserved, balance, committed: dueNow + reserved,
+           unallocated: balance - (dueNow + reserved),
+           paidCount: PAY_LINES.filter(l => paidIds.has(l.id)).length };
+}
+
+function renderMoney() {
+  const b = books();
+  $("tre-stats").innerHTML = [
+    { k: "Collected", v: krw(Z.pool), n: `${Z.entry / 1000}k each, ${D.managers.length} players` },
+    { k: "Paid out", v: krw(b.paidOut), n: `${b.paidCount} of ${PAY_LINES.length} prizes` },
+    { k: "Due now", v: krw(b.dueNow), n: "won, not yet paid", cls: b.dueNow ? "bad" : "good" },
+    { k: "Balance", v: krw(b.balance), n: `${krw(b.committed)} still owed` },
+  ].map(t => `<div class="stat"><div class="k">${t.k}</div>
+    <div class="v money ${t.cls || ""}">${t.v}</div><div class="n">${t.n}</div></div>`).join("");
+
+  const canPay = mode === "shared" || mode === "local";
+  let t = `<table><thead><tr><th>GW</th><th>Winner</th><th class="r">Score</th>
+    <th class="r">Amount</th><th>Status</th></tr></thead><tbody>`;
+  PAY_LINES.forEach(l => {
+    const paid = paidIds.has(l.id);
+    t += `<tr class="${l.entry === ME ? "me" : ""}">
+      <td class="rank num">${l.gw}</td>
+      <td class="team">${esc(l.team)}${l.tied ? ' <span class="badge alt">split</span>' : ""}</td>
+      <td class="r num">${l.points}</td>
+      <td class="r krw">${krw(l.amount)}</td>
+      <td><button class="btn sm pay ${paid ? "on" : ""}" data-id="${l.id}"
+        ${canPay ? "" : "disabled"} type="button">${paid ? "Paid" : "Mark paid"}</button></td>
+    </tr>`;
+  });
+  $("pay-table").innerHTML = t + `</tbody></table>`;
+
+  $("pay-caption").innerHTML = b.dueNow
+    ? `<b>${krw(b.dueNow)} KRW</b> owed across ${PAY_LINES.length - b.paidCount} prizes.`
+    : `All settled.`;
+
+  const note = $("pay-note");
+  if (mode === "loading") note.textContent = "Checking where payments are recorded...";
+  else if (mode === "shared") note.innerHTML =
+    "Saved with the page, so everyone you share it with sees the same record. Click again to undo." +
+    (b.unallocated ? ` <b>Books off by ${krw(b.unallocated)} KRW.</b>` : " Books reconcile.");
+  else if (mode === "local") note.innerHTML =
+    "Saved in this browser only - this copy is not the published page. Click again to undo." +
+    (b.unallocated ? ` <b>Books off by ${krw(b.unallocated)} KRW.</b>` : " Books reconcile.");
+  else note.textContent = "Payments are read-only in this view.";
+
+  const ties = Z.weeks.filter(w => w.tied);
+  $("tie-warning").innerHTML = ties.length ? `<div class="warn">
+    <b>Unsettled:</b> ${ties.map(w => `gameweek ${w.gw} was tied on ${w.points} between
+      ${w.winners.map(x => esc(x.team)).join(" and ")}`).join("; ")}.
+    The prize sheet does not say how a tie is settled, so the ${krw(ties[0].pot)} KRW is shown split.
+    Worth agreeing a rule before it decides real money.</div>` : "";
+
+  $("money-caption").innerHTML =
+    `${krw(Z.weeklyRemaining)} KRW is still to play for week by week.
+     These are today's positions, not results.`;
+
+  let m = `<table><thead><tr><th>Pos</th><th>Team</th><th class="r">Won so far</th>
+    <th class="r">If frozen</th><th class="r">Projected</th>
+    <th class="r">Net of entry</th></tr></thead><tbody>`;
+  Z.rows.forEach(r => {
+    m += `<tr class="${r.entry === ME ? "me" : ""}">
+      <td class="rank num">${r.rank}</td><td class="team">${esc(r.team)}</td>
+      <td class="r krw">${r.banked ? krw(r.banked) : "-"}</td>
+      <td class="r krw" style="color:var(--ink-3)">${r.provisional ? krw(r.provisional) : "-"}</td>
+      <td class="r krw" style="font-weight:700">${krw(r.projected)}</td>
+      <td class="r krw" style="color:${r.net >= 0 ? "var(--good)" : "var(--ink-3)"}">
+        ${r.net >= 0 ? "+" : "&minus;"}${krw(Math.abs(r.net))}</td></tr>`;
+  });
+  $("money-table").innerHTML = m + `</tbody></table>`;
+
+  const e = Z.extremes, fifth = D.standings.find(x => x.rank === 5);
+  $("awards").innerHTML = [
+    { t: `Highest single GW &middot; ${krw(Z.specials.highest)}`,
+      h: e.highest ? `${esc(e.highest.team)}, ${e.highest.points}` : "nobody yet",
+      d: e.highest ? `gameweek ${e.highest.gw}` : "" },
+    { t: `Exactly 111 &middot; ${krw(Z.specials.exact111)}`,
+      h: e.exact111.length ? e.exact111.map(x => esc(x.team)).join(", ") : "unclaimed", d: "" },
+    { t: `Lowest single GW &middot; ${krw(Z.specials.lowest)}`,
+      h: e.lowest ? `${esc(e.lowest.team)}, ${e.lowest.points}` : "nobody yet",
+      d: e.lowest ? `gameweek ${e.lowest.gw}, before hits` : "" },
+    { t: `5th at season end &middot; ${krw(Z.specials.fifth)}`,
+      h: fifth ? esc(fifth.team) : "-", d: "currently 5th" },
+  ].map(a => `<div class="award"><div class="t">${a.t}</div>
+    <div class="h">${a.h}</div><div class="d">${a.d}</div></div>`).join("");
+}
+
+function saveLocal() {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify([...paidIds])); }
+  catch (e) { /* private mode: the toggle still works for this visit */ }
+}
+
+$("pay-table").addEventListener("click", async e => {
+  const btn = e.target.closest(".pay");
+  if (!btn || btn.disabled) return;
+  const line = PAY_LINES.find(l => l.id === btn.dataset.id);
+  const nowPaid = !paidIds.has(line.id);
+
+  if (mode === "local") {
+    nowPaid ? paidIds.add(line.id) : paidIds.delete(line.id);
+    saveLocal(); renderMoney(); return;
+  }
+  btn.disabled = true;
+  try {
+    await store.collection("payments").doc(line.id).set({
+      paid: nowPaid, gw: line.gw, entry: line.entry, team: line.team,
+      amount: line.amount, at: new Date().toISOString(),
+    });
+  } catch (err) {
+    btn.disabled = false;
+    $("pay-note").textContent = "Could not save: " + ((err && err.code) || "unknown error");
+  }
+});
+
+(async () => {
+  const db = await capability("db");
+  if (db) {
+    store = db;
+    db.collection("payments").onSnapshot({
+      next: snap => {
+        paidIds = new Set(snap.docs.filter(d => (d.data() || {}).paid).map(d => d.id));
+        mode = "shared";
+        renderMoney();
+      },
+      error: () => { mode = "readonly"; renderMoney(); },
+    });
+    return;
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+    if (Array.isArray(saved)) paidIds = new Set(saved);
+  } catch (e) { /* private mode */ }
+  mode = "local";
+  renderMoney();
+})();
+
+/* ---------------- workbook ---------------- */
+function workbook() {
+  const b = books();
+  const wb = XLSX.utils.book_new();
+  const sheet = (name, rows) =>
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), name);
+
+  sheet("Summary", [
+    [`${D.league.name} 2026/27 - prize pool`],
+    [`Snapshot ${D.generated.slice(0, 16).replace("T", " ")} UTC`], [],
+    ["MONEY IN"], [`Entries (${D.managers.length} x ${Z.entry} KRW)`, Z.pool], [],
+    ["MONEY OUT"], ["Paid to weekly winners", b.paidOut],
+    ["Due now (weeks won, not yet paid)", b.dueNow], [],
+    ["STILL RESERVED"], ["Future weekly prizes", Z.weeklyRemaining],
+    ["Special awards", RESERVED_SPECIALS], ["Champion and runner-up", RESERVED_PODIUM], [],
+    ["POSITION"], ["Balance on hand", b.balance], ["Total still owed", b.committed],
+    ["Unallocated (should be zero)", b.unallocated],
+  ]);
+
+  sheet("Prize ledger", [["GW", "Winner", "Score", "Amount", "Status", "Tie"]].concat(
+    PAY_LINES.map(l => [l.gw, l.team, l.points, l.amount,
+      paidIds.has(l.id) ? "PAID" : "DUE", l.tied ? "split" : ""])));
+
+  const people = Object.fromEntries(D.managers.map(m => [m.entry, m.manager]));
+  const got = {}, owed = {};
+  PAY_LINES.forEach(l => {
+    const bucket = paidIds.has(l.id) ? got : owed;
+    bucket[l.entry] = (bucket[l.entry] || 0) + l.amount;
+  });
+  const byManagerHead = ["Pos", "Team"].concat(HAS_NAMES ? ["Manager"] : [],
+    ["Entry paid", "Received", "Still owed"]);
+  sheet("By manager", [byManagerHead].concat(D.standings.map(s =>
+    [s.rank, s.team].concat(HAS_NAMES ? [people[s.entry] || ""] : [],
+      [Z.entry, got[s.entry] || 0, owed[s.entry] || 0]))));
+
+  const gwRows = [["GW", "Pos", "Team", "Manager", "GW pts", "Gross", "Hit", "Bench",
+                   "Captain", "C pts", "Season total", "Chip"]];
+  D.playedGws.forEach(gw => {
+    const totals = Object.fromEntries(D.season[gw].map(x => [x.entry, x.total]));
+    D.gameweeks[gw].rows.forEach(r => gwRows.push([gw, r.place, r.team, r.manager || "",
+      r.points, r.gross, r.hit ? -r.hit : 0, r.bench,
+      (P[r.captain] || {}).name || "", r.captainPoints, totals[r.entry], r.chip || ""]));
+  });
+  sheet("Gameweeks", gwRows);
+
+  const e = Z.extremes, fifth = D.standings.find(x => x.rank === 5);
+  sheet("Special awards", [["Award", "Amount", "Currently", "Detail"],
+    ["Highest single gameweek", Z.specials.highest, e.highest ? e.highest.team : "-",
+      e.highest ? `${e.highest.points} in GW${e.highest.gw}` : ""],
+    ["Exactly 111 in a gameweek", Z.specials.exact111,
+      e.exact111.length ? e.exact111.map(x => x.team).join(", ") : "unclaimed", ""],
+    ["Lowest single gameweek", Z.specials.lowest, e.lowest ? e.lowest.team : "-",
+      e.lowest ? `${e.lowest.points} in GW${e.lowest.gw}, before hits` : ""],
+    ["5th at season end", Z.specials.fifth, fifth ? fifth.team : "-", "currently 5th"],
+    ["Champion", Z.champion, D.standings[0].team, "currently 1st"],
+    ["Runner-up", Z.runnerUp, D.standings[1].team, "currently 2nd"],
+  ]);
+  return wb;
+}
+
+$("xlsx-btn").addEventListener("click", async e => {
+  const btn = e.currentTarget, original = btn.textContent;
+  const filename = `GME-fantasy-books-GW${D.currentGw}.xlsx`;
+  btn.textContent = "Preparing..."; btn.disabled = true;
+  try {
+    const buf = XLSX.write(workbook(), { bookType: "xlsx", type: "array" });
+    const downloads = await capability("downloads");
+    if (downloads) {
+      await downloads.save({ filename, data: buf });
+      btn.textContent = "Saved";
+    } else {
+      // Plain browser download - works when the page is served locally.
+      const url = URL.createObjectURL(new Blob([buf],
+        { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      btn.textContent = "Downloaded";
+    }
+  } catch (err) {
+    btn.textContent = (err && err.code === "declined") ? original : "Could not save";
+  }
+  btn.disabled = false;
+  setTimeout(() => { btn.textContent = original; }, 2500);
+});
+
+renderGw();
+renderUpcoming();
+renderPicks();
+renderMoney();
+
+</script>

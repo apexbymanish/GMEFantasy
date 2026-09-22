@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+
+# Local data. These carry managers' real names, and this repo is public.
+# Recreate them with: python3 -m fpl export && python3 dashboard/build.py
+dashboard/data.json
+dashboard/index.html
+dashboard/pub.html
+dashboard/payments.json
+*.xlsx

@@ -29,6 +29,18 @@ Those sit in secondary ink, where the minus sign does the work.
 | Ordinary negative | `--ink-2` | transfer hits, points gaps |
 | Good | `--good` | an easy fixture, a settled payment |
 
+## Whose board is it
+
+Ten people use this, so it opens as a league board, not as one manager's page.
+The headline card, the six stats and the differentials panel all answer
+league-wide questions until someone picks their team from the menu in the
+header. Once picked, the same surfaces switch to that manager's position, their
+differentials and what they are owed, and the choice is remembered in their own
+browser.
+
+No team is the default. A board that assumed one of the ten would be wrong for
+the other nine.
+
 ## Tokens
 
 Light is the default on bare `:root`. Dark redefines the same names under both

@@ -2,6 +2,10 @@
 
 **Live: https://apexbymanish.github.io/GMEFantasy/**
 
+Open it and pick your team from the menu in the top right; the board then shows
+your position, your differentials and what you are owed. Until then it shows
+the league.
+
 A terminal tool for analysing a Fantasy Premier League mini-league: who won each
 gameweek, how the table moved, which players are differentials, and who to buy next.
 

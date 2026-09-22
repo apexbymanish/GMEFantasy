@@ -73,6 +73,18 @@ h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.021em; text-wrap:balance}
 .clock-box{text-align:right; line-height:1.25}
 .clock-box .eyebrow{display:block; font-size:9.5px}
 .clock-box .t{font-size:16px; font-weight:700}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.who-wrap{position:relative; display:inline-flex}
+#who{appearance:none; font:600 12.5px/1 Archivo,sans-serif; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-sm);
+  padding:0 26px 0 11px; min-height:32px; max-width:150px; cursor:pointer;
+  text-overflow:ellipsis; transition:.12s}
+#who:hover{border-color:var(--ink-3)}
+#who:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.who-wrap::after{content:""; position:absolute; right:10px; top:50%; width:6px; height:6px;
+  border-right:1.5px solid var(--ink-3); border-bottom:1.5px solid var(--ink-3);
+  transform:translateY(-70%) rotate(45deg); pointer-events:none}
+#who[data-picked="1"]{border-color:var(--brand-edge); color:var(--brand)}
 .icon-btn{width:32px; height:32px; display:none; place-items:center; flex:none;
   border:1px solid var(--line-2); background:var(--surface); color:var(--ink-3);
   border-radius:var(--r-sm); cursor:pointer; font:600 13px/1 Archivo,sans-serif}
@@ -224,6 +236,8 @@ td.rank{color:var(--ink-3); width:36px}
 .subhead{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
   font-weight:600; margin:0 0 8px}
 .empty{color:var(--ink-3); font-size:13px; font-style:italic; padding:6px 0; margin:0}
+.prompt{font-size:13.5px; color:var(--ink-2); border-left:3px solid var(--brand)}
+.prompt b{color:var(--ink)}
 .note{font-size:12.5px; color:var(--ink-3); margin:13px 0 0}
 
 /* ---------------- misc ---------------- */
@@ -269,6 +283,8 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   .brand p{display:none}
   .brand h1{font-size:15px}
   .clock-box .t{font-size:14.5px}
+  .clock-box .eyebrow{display:none}
+  #who{max-width:104px; font-size:12px; padding:0 22px 0 9px}
   nav.tabs button{padding:13px 12px 11px; font-size:13px}
   .standing{padding:16px 17px; gap:12px 18px}
   .standing .pos{font-size:36px}
@@ -312,6 +328,10 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       </div>
     </div>
     <div class="head-right">
+      <label class="who-wrap">
+        <span class="sr">Viewing as</span>
+        <select id="who" aria-label="Viewing as"></select>
+      </label>
       <div class="clock-box">
         <span class="eyebrow" id="deadline-label">Next deadline</span>
         <span class="t num" id="countdown"></span>
@@ -327,6 +347,12 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   <main>
     <div id="tab-overview" role="tabpanel">
       <section class="block"><div class="card standing" id="standing"></div></section>
+      <section class="block" id="pick-prompt-block" hidden>
+        <div class="card pad prompt">
+          <b>Pick your team</b> in the menu at the top right and this board starts
+          showing your own position, your differentials and what you are owed.
+        </div>
+      </section>
       <section class="block"><div class="stats" id="stats"></div></section>
       <section class="block">
         <header class="head-row">
@@ -361,8 +387,8 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       <section class="block">
         <header><h2>Differentials</h2><p id="diff-caption"></p></header>
         <div class="grid2">
-          <div class="card pad"><h3 class="subhead">Only you started</h3><div id="diff-mine"></div></div>
-          <div class="card pad"><h3 class="subhead">Best you missed</h3><div id="diff-theirs"></div></div>
+          <div class="card pad"><h3 class="subhead" id="diff-mine-head">Only you started</h3><div id="diff-mine"></div></div>
+          <div class="card pad"><h3 class="subhead" id="diff-theirs-head">Best you missed</h3><div id="diff-theirs"></div></div>
         </div>
       </section>
     </div>

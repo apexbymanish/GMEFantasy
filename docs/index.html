@@ -73,6 +73,18 @@ h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.021em; text-wrap:balance}
 .clock-box{text-align:right; line-height:1.25}
 .clock-box .eyebrow{display:block; font-size:9.5px}
 .clock-box .t{font-size:16px; font-weight:700}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.who-wrap{position:relative; display:inline-flex}
+#who{appearance:none; font:600 12.5px/1 Archivo,sans-serif; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-sm);
+  padding:0 26px 0 11px; min-height:32px; max-width:150px; cursor:pointer;
+  text-overflow:ellipsis; transition:.12s}
+#who:hover{border-color:var(--ink-3)}
+#who:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.who-wrap::after{content:""; position:absolute; right:10px; top:50%; width:6px; height:6px;
+  border-right:1.5px solid var(--ink-3); border-bottom:1.5px solid var(--ink-3);
+  transform:translateY(-70%) rotate(45deg); pointer-events:none}
+#who[data-picked="1"]{border-color:var(--brand-edge); color:var(--brand)}
 .icon-btn{width:32px; height:32px; display:none; place-items:center; flex:none;
   border:1px solid var(--line-2); background:var(--surface); color:var(--ink-3);
   border-radius:var(--r-sm); cursor:pointer; font:600 13px/1 Archivo,sans-serif}
@@ -224,6 +236,8 @@ td.rank{color:var(--ink-3); width:36px}
 .subhead{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3);
   font-weight:600; margin:0 0 8px}
 .empty{color:var(--ink-3); font-size:13px; font-style:italic; padding:6px 0; margin:0}
+.prompt{font-size:13.5px; color:var(--ink-2); border-left:3px solid var(--brand)}
+.prompt b{color:var(--ink)}
 .note{font-size:12.5px; color:var(--ink-3); margin:13px 0 0}
 
 /* ---------------- misc ---------------- */
@@ -269,6 +283,8 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   .brand p{display:none}
   .brand h1{font-size:15px}
   .clock-box .t{font-size:14.5px}
+  .clock-box .eyebrow{display:none}
+  #who{max-width:104px; font-size:12px; padding:0 22px 0 9px}
   nav.tabs button{padding:13px 12px 11px; font-size:13px}
   .standing{padding:16px 17px; gap:12px 18px}
   .standing .pos{font-size:36px}
@@ -312,6 +328,10 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       </div>
     </div>
     <div class="head-right">
+      <label class="who-wrap">
+        <span class="sr">Viewing as</span>
+        <select id="who" aria-label="Viewing as"></select>
+      </label>
       <div class="clock-box">
         <span class="eyebrow" id="deadline-label">Next deadline</span>
         <span class="t num" id="countdown"></span>
@@ -327,6 +347,12 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   <main>
     <div id="tab-overview" role="tabpanel">
       <section class="block"><div class="card standing" id="standing"></div></section>
+      <section class="block" id="pick-prompt-block" hidden>
+        <div class="card pad prompt">
+          <b>Pick your team</b> in the menu at the top right and this board starts
+          showing your own position, your differentials and what you are owed.
+        </div>
+      </section>
       <section class="block"><div class="stats" id="stats"></div></section>
       <section class="block">
         <header class="head-row">
@@ -361,8 +387,8 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       <section class="block">
         <header><h2>Differentials</h2><p id="diff-caption"></p></header>
         <div class="grid2">
-          <div class="card pad"><h3 class="subhead">Only you started</h3><div id="diff-mine"></div></div>
-          <div class="card pad"><h3 class="subhead">Best you missed</h3><div id="diff-theirs"></div></div>
+          <div class="card pad"><h3 class="subhead" id="diff-mine-head">Only you started</h3><div id="diff-mine"></div></div>
+          <div class="card pad"><h3 class="subhead" id="diff-theirs-head">Best you missed</h3><div id="diff-theirs"></div></div>
         </div>
       </section>
     </div>
@@ -448,8 +474,21 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
 const D = JSON.parse(document.getElementById("fpl-data").textContent);
 const Z = D.prizes;
 const P = D.players;
-const ME = D.me;
 const GWS = D.playedGws;
+
+/* Who is looking. The board belongs to the league, not to one manager, so
+   nobody is assumed: personal panels stay dark until a team is picked, and
+   the choice lives in this browser. */
+const WHO_KEY = "gme-who-v1";
+let ME = (() => {
+  try {
+    const saved = localStorage.getItem(WHO_KEY);
+    if (saved && D.managers.some(m => String(m.entry) === saved)) return +saved;
+  } catch (e) { /* private mode */ }
+  return null;
+})();
+const picked = () => ME != null;
+const myRow = () => D.standings.find(s => s.entry === ME);
 const HAS_NAMES = D.managers.some(m => m.manager);
 
 const $ = id => document.getElementById(id);
@@ -491,6 +530,21 @@ try {
   if (saved && TABS.some(t => t.id === saved)) showTab(saved);
 } catch (e) { /* private mode */ }
 
+/* ---------------- who is looking ---------------- */
+const who = $("who");
+who.innerHTML = '<option value="">Everyone</option>' +
+  D.standings.map(s => `<option value="${s.entry}">${esc(s.team)}</option>`).join("");
+who.value = picked() ? String(ME) : "";
+who.dataset.picked = picked() ? "1" : "0";
+who.addEventListener("change", () => {
+  ME = who.value ? +who.value : null;
+  who.dataset.picked = picked() ? "1" : "0";
+  try {
+    picked() ? localStorage.setItem(WHO_KEY, String(ME)) : localStorage.removeItem(WHO_KEY);
+  } catch (e) { /* private mode */ }
+  renderAll();
+});
+
 /* ---------------- header ---------------- */
 $("league-name").textContent = D.league.name;
 $("league-sub").textContent = `${D.managers.length} managers, gameweek ${D.currentGw} of 38`;
@@ -510,41 +564,92 @@ function tick() {
 }
 tick(); setInterval(tick, 30000);
 
-/* ---------------- season stats ---------------- */
-const meRow = D.standings.find(s => s.entry === ME);
-const leader = D.standings[0];
-const myWeeks = GWS.map(gw => D.season[gw].find(r => r.entry === ME));
-const myGwRows = GWS.map(gw => D.gameweeks[gw].rows.find(r => r.entry === ME));
-const best = myWeeks.reduce((a, b) => (b.points > a.points ? b : a));
-const worst = myWeeks.reduce((a, b) => (b.points < a.points ? b : a));
-const bestGw = GWS[myWeeks.indexOf(best)], worstGw = GWS[myWeeks.indexOf(worst)];
-const benched = myGwRows.reduce((s, r) => s + r.bench, 0);
-const hits = myGwRows.reduce((s, r) => s + r.hit, 0);
-const wins = GWS.filter(gw => D.gameweeks[gw].rows[0].entry === ME).length;
-const avgPlace = myGwRows.reduce((s, r) => s + r.place, 0) / myGwRows.length;
-const gap = leader.total - meRow.total;
+/* ---------------- headline card and stats ---------------- */
+// Numbers that describe the league, true for everyone looking.
+const leagueFacts = (() => {
+  let high = null, low = null, total = 0, count = 0;
+  GWS.forEach(gw => D.gameweeks[gw].rows.forEach(r => {
+    total += r.points; count++;
+    if (!high || r.points > high.points) high = { ...r, gw };
+    if (!low || r.gross < low.gross) low = { ...r, gw };
+  }));
+  return { high, low, average: count ? total / count : 0 };
+})();
 
-$("standing").innerHTML = `
-  <div class="pos num">${meRow.rank}<sup>${ord(meRow.rank).slice(String(meRow.rank).length)}</sup></div>
-  <div class="who">
-    <h2>${esc(meRow.team)}</h2>
-    <p>${HAS_NAMES ? esc(meRow.manager) + " &middot; " : ""}${meRow.total} points &middot;
-       ${gap === 0 ? "leading the league" : `${gap} behind ${esc(leader.team)}`}</p>
-  </div>
-  <div class="verdict">
-    Best week <b>GW${bestGw} (${best.points})</b>, worst <b>GW${worstGw} (${worst.points})</b>.
-    You have left <b>${benched} points on the bench</b> and paid <b>${hits} in hits</b>.
-  </div>`;
+function renderStanding() {
+  const leader = D.standings[0];
+  $("pick-prompt-block").hidden = picked();
 
-$("stats").innerHTML = [
-  { k: "Position", v: meRow.rank, n: `of ${D.managers.length}` },
-  { k: "Total points", v: meRow.total, n: `${(meRow.total / GWS.length).toFixed(1)} per week` },
-  { k: "Gap to top", v: gap === 0 ? "-" : "&minus;" + gap, n: gap === 0 ? "you lead" : esc(leader.team), cls: gap === 0 ? "good" : "bad" },
-  { k: "Best gameweek", v: best.points, n: `gameweek ${bestGw}` },
-  { k: "Left on bench", v: benched, n: "never counted" },
-  { k: "Gameweeks won", v: wins, n: `avg finish ${avgPlace.toFixed(1)}` },
-].map(t => `<div class="stat"><div class="k">${t.k}</div>
-  <div class="v num ${t.cls || ""}">${t.v}</div><div class="n">${t.n}</div></div>`).join("");
+  if (!picked()) {
+    const chasing = D.standings[1];
+    $("standing").innerHTML = `
+      <div class="pos num">1<sup>st</sup></div>
+      <div class="who">
+        <h2>${esc(leader.team)}</h2>
+        <p>leads on ${leader.total} points after ${GWS.length}
+           gameweek${GWS.length === 1 ? "" : "s"}</p>
+      </div>
+      <div class="verdict">
+        ${chasing ? `<b>${esc(chasing.team)}</b> is ${leader.total - chasing.total} behind. ` : ""}
+        The highest single week so far is <b>${leagueFacts.high.points}</b>
+        by ${esc(leagueFacts.high.team)} in GW${leagueFacts.high.gw}.
+      </div>`;
+    return;
+  }
+
+  const me = myRow();
+  const weeks = GWS.map(gw => D.season[gw].find(r => r.entry === ME));
+  const rows = GWS.map(gw => D.gameweeks[gw].rows.find(r => r.entry === ME));
+  const best = weeks.reduce((x, y) => (y.points > x.points ? y : x));
+  const worst = weeks.reduce((x, y) => (y.points < x.points ? y : x));
+  const gap = leader.total - me.total;
+  const benched = rows.reduce((t, r) => t + r.bench, 0);
+  const hits = rows.reduce((t, r) => t + r.hit, 0);
+  $("standing").innerHTML = `
+    <div class="pos num">${me.rank}<sup>${ord(me.rank).slice(String(me.rank).length)}</sup></div>
+    <div class="who">
+      <h2>${esc(me.team)}</h2>
+      <p>${HAS_NAMES && me.manager ? esc(me.manager) + " &middot; " : ""}${me.total} points &middot;
+         ${gap === 0 ? "leading the league" : `${gap} behind ${esc(leader.team)}`}</p>
+    </div>
+    <div class="verdict">
+      Best week <b>GW${GWS[weeks.indexOf(best)]} (${best.points})</b>,
+      worst <b>GW${GWS[weeks.indexOf(worst)]} (${worst.points})</b>.
+      Left <b>${benched} points on the bench</b> and paid <b>${hits} in hits</b>.
+    </div>`;
+}
+
+function renderStats() {
+  const f = leagueFacts;
+  const cards = picked() ? (() => {
+    const me = myRow();
+    const weeks = GWS.map(gw => D.season[gw].find(r => r.entry === ME));
+    const rows = GWS.map(gw => D.gameweeks[gw].rows.find(r => r.entry === ME));
+    const best = weeks.reduce((x, y) => (y.points > x.points ? y : x));
+    const gap = D.standings[0].total - me.total;
+    const wins = GWS.filter(gw => D.gameweeks[gw].rows[0].entry === ME).length;
+    return [
+      { k: "Position", v: me.rank, n: `of ${D.managers.length}` },
+      { k: "Total points", v: me.total, n: `${(me.total / GWS.length).toFixed(1)} per week` },
+      { k: "Gap to top", v: gap === 0 ? "-" : "&minus;" + gap,
+        n: gap === 0 ? "you lead" : esc(D.standings[0].team), cls: gap === 0 ? "good" : "bad" },
+      { k: "Best gameweek", v: best.points, n: `gameweek ${GWS[weeks.indexOf(best)]}` },
+      { k: "Left on bench", v: rows.reduce((t, r) => t + r.bench, 0), n: "never counted" },
+      { k: "Gameweeks won", v: wins,
+        n: `avg finish ${(rows.reduce((t, r) => t + r.place, 0) / rows.length).toFixed(1)}` },
+    ];
+  })() : [
+    { k: "Leader", v: D.standings[0].total, n: esc(D.standings[0].team) },
+    { k: "Gameweeks played", v: GWS.length, n: `of 38` },
+    { k: "Highest week", v: f.high.points, n: `${esc(f.high.team)}, GW${f.high.gw}` },
+    { k: "Lowest week", v: f.low.gross, n: `${esc(f.low.team)}, GW${f.low.gw}` },
+    { k: "League average", v: f.average.toFixed(1), n: "points per manager per week" },
+    { k: "Still to win", v: krw(Z.weeklyRemaining), n: "KRW in weekly prizes", cls: "money" },
+  ];
+  $("stats").innerHTML = cards.map(t => `<div class="stat"><div class="k">${t.k}</div>
+    <div class="v ${t.cls === "money" ? "money" : "num"} ${t.cls && t.cls !== "money" ? t.cls : ""}">${t.v}</div>
+    <div class="n">${t.n}</div></div>`).join("");
+}
 
 /* ---------------- title race ---------------- */
 const N = D.managers.length;
@@ -555,7 +660,7 @@ const STEP = Math.max(1, Math.ceil(30 / (PLOT_W / Math.max(1, GWS.length - 1))))
 const px = i => VB.l + (GWS.length === 1 ? 0 : i * PLOT_W / (GWS.length - 1));
 const py = pos => VB.t + (pos - 1) * ((VB.h - VB.t - VB.b) / Math.max(1, N - 1));
 
-(function bump() {
+function renderBump() {
   const series = D.managers.map(m => {
     const mine = D.positions[m.entry] || {};
     // A manager who joined mid-season has no position for the earlier
@@ -576,6 +681,9 @@ const py = pos => VB.t + (pos - 1) * ((VB.h - VB.t - VB.b) / Math.max(1, N - 1))
     };
   }).filter(t => t.played > 0);
 
+  const legend = document.querySelector(".legend");
+  if (legend) legend.style.display = picked() ? "" : "none";
+
   let s = `<svg viewBox="0 0 ${VB.w} ${VB.h}" role="img" aria-label="League position by gameweek">`;
   for (let p = 1; p <= N; p++) {
     s += `<line x1="${VB.l}" y1="${py(p)}" x2="${VB.w - VB.r + 6}" y2="${py(p)}" stroke="var(--line)" stroke-width="1"/>`;
@@ -591,12 +699,12 @@ const py = pos => VB.t + (pos - 1) * ((VB.h - VB.t - VB.b) / Math.max(1, N - 1))
            font-family="IBM Plex Mono, monospace">GW${gw}</text>`;
   });
   series.forEach(t => {
-    const mine = t.entry === ME;
+    const mine = picked() && t.entry === ME;
     s += `<path class="bump-line" data-e="${t.entry}" d="${t.path}"
            stroke="${mine ? "var(--s1)" : "var(--ink-3)"}" stroke-width="${mine ? 2.5 : 1.6}"/>`;
   });
   series.forEach(t => {
-    const mine = t.entry === ME, cx = px(t.lastIndex), cy = py(t.final);
+    const mine = picked() && t.entry === ME, cx = px(t.lastIndex), cy = py(t.final);
     s += `<circle cx="${cx}" cy="${cy}" r="${mine ? 4.5 : 3.5}"
            fill="${mine ? "var(--s1)" : "var(--ink-3)"}" stroke="var(--surface)" stroke-width="2"/>`;
     s += `<text x="${cx + 12}" y="${cy + 4}" font-size="12.5" font-family="Archivo, sans-serif"
@@ -638,7 +746,7 @@ const py = pos => VB.t + (pos - 1) * ((VB.h - VB.t - VB.b) / Math.max(1, N - 1))
       GWS.map(g => `<td class="r num">${mine[g] == null ? "-" : mine[g]}</td>`).join("") + `</tr>`;
   });
   $("bump-table").innerHTML = rows + `</tbody></table>`;
-})();
+}
 
 /* ---------------- gameweek board ---------------- */
 let activeGw = GWS[GWS.length - 1];
@@ -694,25 +802,59 @@ function renderGw() {
 
 function renderDiff() {
   const g = D.gameweeks[activeGw], own = g.ownership, pts = g.playerPoints;
-  const mine = g.rows.find(r => r.entry === ME);
-  const started = new Set(mine.starters);
-
-  const myDiff = mine.starters.filter(p => own[p] === 1).sort((a, b) => (pts[b] || 0) - (pts[a] || 0));
-  const missed = Object.keys(own).filter(p => own[p] === 1 && !started.has(+p))
-    .sort((a, b) => (pts[b] || 0) - (pts[a] || 0)).slice(0, 7);
-  const gained = myDiff.reduce((s, p) => s + (pts[p] || 0), 0);
-  const lost = missed.reduce((s, p) => s + (pts[p] || 0), 0);
-
   const item = p => {
     const pl = P[p] || { name: "?", team: "", pos: "" };
     return `<li><span class="pos">${pl.pos}</span><span>${esc(pl.name)}</span>
       <span class="club">${esc(pl.team)}</span><span class="p">${pts[p] || 0}</span></li>`;
   };
-  $("diff-caption").innerHTML =
-    `Gameweek ${activeGw}. Yours returned <b>${gained}</b>; the best you missed returned <b>${lost}</b>.`;
+  const byPoints = (a, b) => (pts[b] || 0) - (pts[a] || 0);
+
+  if (!picked()) {
+    // Nobody has claimed a team, so answer the league-wide question instead:
+    // who gambled, and what did everyone own in common.
+    const owners = {};
+    g.rows.forEach(r => r.starters.forEach(id => {
+      (owners[id] = owners[id] || []).push(r.team);
+    }));
+    const solo = Object.keys(own).filter(p => own[p] === 1).sort(byPoints).slice(0, 8);
+    const template = Object.keys(own).sort((a, b) => own[b] - own[a] || byPoints(a, b)).slice(0, 8);
+
+    $("diff-caption").innerHTML = `Gameweek ${activeGw}. ${solo.length} player${solo.length === 1 ? " was" : "s were"}
+      started by exactly one manager.`;
+    $("diff-mine-head").textContent = "Started by one manager only";
+    $("diff-theirs-head").textContent = "What almost everyone owned";
+    $("diff-mine").innerHTML = solo.length
+      ? `<ul class="dlist">${solo.map(p => {
+          const pl = P[p] || { name: "?", team: "", pos: "" };
+          return `<li><span class="pos">${pl.pos}</span><span>${esc(pl.name)}</span>
+            <span class="club">${esc((owners[p] || [])[0] || "")}</span>
+            <span class="p">${pts[p] || 0}</span></li>`;
+        }).join("")}</ul>`
+      : `<p class="empty">Everyone owned the same players.</p>`;
+    $("diff-theirs").innerHTML = `<ul class="dlist">${template.map(p => {
+      const pl = P[p] || { name: "?", team: "", pos: "" };
+      return `<li><span class="pos">${pl.pos}</span><span>${esc(pl.name)}</span>
+        <span class="club">${own[p]}/${g.rows.length} owned</span>
+        <span class="p">${pts[p] || 0}</span></li>`;
+    }).join("")}</ul>`;
+    return;
+  }
+
+  const mine = g.rows.find(r => r.entry === ME);
+  const started = new Set(mine.starters);
+  const myDiff = mine.starters.filter(p => own[p] === 1).sort(byPoints);
+  const missed = Object.keys(own).filter(p => own[p] === 1 && !started.has(+p))
+    .sort(byPoints).slice(0, 7);
+  const gained = myDiff.reduce((s, p) => s + (pts[p] || 0), 0);
+  const lost = missed.reduce((s, p) => s + (pts[p] || 0), 0);
+
+  $("diff-caption").innerHTML = `Gameweek ${activeGw}. ${esc(mine.team)} gained
+    <b>${gained}</b> from differentials; the best they missed returned <b>${lost}</b>.`;
+  $("diff-mine-head").textContent = "Only they started";
+  $("diff-theirs-head").textContent = "Best they missed";
   $("diff-mine").innerHTML = myDiff.length
     ? `<ul class="dlist">${myDiff.map(item).join("")}</ul>`
-    : `<p class="empty">Nothing - your XI was the league template.</p>`;
+    : `<p class="empty">Nothing - that XI was the league template.</p>`;
   $("diff-theirs").innerHTML = missed.length
     ? `<ul class="dlist">${missed.map(item).join("")}</ul>`
     : `<p class="empty">Nobody else had a differential either.</p>`;
@@ -1047,10 +1189,20 @@ $("xlsx-btn").addEventListener("click", async e => {
   setTimeout(() => { btn.textContent = original; }, 2500);
 });
 
-renderGw();
+/* ---------------- render ---------------- */
+// Everything that depends on who is looking, in one place, so switching
+// team redraws the whole board at once.
+function renderAll() {
+  renderStanding();
+  renderStats();
+  renderBump();
+  renderGw();      // renderGw calls renderDiff
+  renderMoney();
+}
+
 renderUpcoming();
 renderPicks();
-renderMoney();
+renderAll();
 
 /* ---------------- install as an app ---------------- */
 // A manifest lets a phone add this to the home screen and open it without

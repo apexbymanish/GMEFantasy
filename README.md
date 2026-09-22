@@ -1,5 +1,7 @@
 # FPL Mini-League Analyzer
 
+**Live: https://apexbymanish.github.io/GMEFantasy/**
+
 A terminal tool for analysing a Fantasy Premier League mini-league: who won each
 gameweek, how the table moved, which players are differentials, and who to buy next.
 
@@ -135,3 +137,33 @@ owed. A non-zero figure means the prize sheet no longer adds up to the pool.
 The dashboard keeps the same ledger, stored server-side, so a payment marked
 there is visible to everyone who opens the page. The CLI keeps its own copy in
 `dashboard/payments.json`; the two are separate records, so settle in one place.
+
+
+## Publishing
+
+The site is GitHub Pages, served from `docs/`. To update it after a gameweek:
+
+```sh
+python3 -m fpl export        # pull the new gameweek from the FPL API
+python3 dashboard/build.py   # rebuild both copies
+git add docs && git commit -m "Through GW6" && git push
+```
+
+It is live about a minute later.
+
+### What is public and what is not
+
+The site is public, so `dashboard/build.py` writes two different pages:
+
+| File | Data | Where it goes |
+|---|---|---|
+| `dashboard/index.html` | full, **including managers' real names** | local only, git-ignored |
+| `docs/index.html` | same page, real names removed | GitHub Pages |
+
+Team names are pseudonyms the managers chose and are already visible on the
+FPL site; their real names are not. `dashboard/data.json` is git-ignored for
+the same reason — regenerate it with `fpl export`.
+
+Payments marked on the public site are stored in each visitor's own browser,
+so they are not shared. The published Claude artifact keeps a shared ledger;
+use that one for the real record.

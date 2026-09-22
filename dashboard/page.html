@@ -204,6 +204,51 @@ td.rank{color:var(--ink-3); width:36px}
 .bar-row.me .nm{color:var(--brand); font-weight:700}
 .bar-row .val{text-align:right; font-weight:600}
 
+/* ---------------- pitch ---------------- */
+/* The pitch keeps its own small palette: it is green in both themes, so the
+   shirts are light in both and stay readable on it. */
+.pitch-card{overflow:hidden; --pitch-a:#2B6B4E; --pitch-b:#1F5340; --line-w:rgba(255,255,255,.22);
+  --kit:#F7F8FA; --kit-ink:#16181D; --kit-2:#5A6069}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .pitch-card{--pitch-a:#1C4636; --pitch-b:#14332800; --pitch-b:#143328}
+}
+:root[data-theme="dark"] .pitch-card{--pitch-a:#1C4636; --pitch-b:#143328}
+.pitch{position:relative; overflow:hidden; background:linear-gradient(175deg,var(--pitch-a),var(--pitch-b));
+  padding:20px 14px 40px; display:grid; gap:14px;
+  background-image:
+    linear-gradient(175deg,var(--pitch-a),var(--pitch-b)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0 44px, transparent 44px 88px)}
+.pitch::before{content:""; position:absolute; left:50%; top:8px; width:38%; height:56px;
+  transform:translateX(-50%); border:1px solid var(--line-w); border-top:0; border-radius:0 0 4px 4px;
+  pointer-events:none}
+.pitch::after{content:""; position:absolute; left:50%; bottom:-40px; width:80px; height:80px;
+  transform:translateX(-50%); border:1px solid var(--line-w); border-radius:50%; pointer-events:none}
+/* halfway line, at the foot of the pitch */
+.pitch .row:last-child::after{content:""; position:absolute; left:-14px; right:-14px; bottom:-22px;
+  height:1px; background:var(--line-w); pointer-events:none}
+.row{display:flex; justify-content:center; gap:8px; flex-wrap:wrap; position:relative; z-index:1}
+.kit{width:84px; text-align:center; position:relative}
+.kit .shirt{height:30px; border-radius:6px 6px 9px 9px; background:var(--kit);
+  display:grid; place-items:center; font:700 10px/1 Archivo,sans-serif; color:var(--kit-2);
+  letter-spacing:.04em; box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.kit .nm{margin-top:4px; font:600 11px/1.25 Archivo,sans-serif; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.kit .pt{margin-top:2px; font:600 11px/1.3 "IBM Plex Mono",monospace; color:var(--kit);
+  background:rgba(0,0,0,.28); border-radius:4px; display:inline-block; padding:0 6px}
+.kit .pt.zero{opacity:.55}
+.kit .arm{position:absolute; top:-5px; right:11px; width:17px; height:17px; border-radius:50%;
+  background:var(--ink); color:var(--surface); font:700 9px/17px Archivo,sans-serif;
+  border:1.5px solid var(--kit)}
+.kit .arm.v{background:var(--kit); color:var(--kit-ink)}
+.bench{display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+  padding:13px 14px; background:var(--surface-2); border-top:1px solid var(--line)}
+.bench .kit .nm{color:var(--ink-2); text-shadow:none}
+.bench .kit .shirt{background:var(--surface); color:var(--ink-3);
+  border:1px solid var(--line-2); box-shadow:none}
+.bench .kit .pt{background:var(--line); color:var(--ink-2)}
+.bench-label{width:100%; text-align:center; font-size:9.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:600; margin-bottom:2px}
+
 /* ---------------- fixtures ---------------- */
 .fixtures{display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:1px;
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
@@ -299,6 +344,14 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   .fixtures{grid-template-columns:1fr}
   .fx .ko{width:70px}
   .bar-row{grid-template-columns:minmax(66px,104px) 1fr 32px; gap:9px; font-size:12.5px}
+  .pitch{padding:16px 8px 34px; gap:11px}
+  .row{gap:5px}
+  .kit{width:62px}
+  .kit .shirt{height:25px; font-size:9px}
+  .kit .nm{font-size:10px}
+  .kit .pt{font-size:10px; padding:0 5px}
+  .kit .arm{width:15px; height:15px; line-height:15px; font-size:8px; right:5px}
+  .bench{padding:11px 8px}
   table{font-size:13px}
   th{padding:10px 9px 8px}
   td{padding:10px 9px}
@@ -380,6 +433,20 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
         </header>
         <div class="card"><div class="scroll" id="gw-table"></div></div>
       </section>
+      <section class="block">
+        <header class="head-row">
+          <div><h2>Line-up</h2><p id="pitch-caption"></p></div>
+          <label class="who-wrap">
+            <span class="sr">Whose line-up</span>
+            <select id="pitch-who" aria-label="Whose line-up"></select>
+          </label>
+        </header>
+        <div class="card pitch-card">
+          <div class="pitch" id="pitch"></div>
+          <div class="bench" id="bench"></div>
+        </div>
+      </section>
+
       <section class="block">
         <header><h2>Points that week</h2><p>Net of transfer hits.</p></header>
         <div class="card pad"><div class="bars" id="gw-bars"></div></div>

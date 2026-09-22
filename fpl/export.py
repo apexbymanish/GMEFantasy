@@ -44,6 +44,8 @@ def snapshot(league_id, my_entry, horizon=3, top=8):
         seen.update(counts)
         for row in rows:
             seen.add(row["captain"])
+            seen.add(row["vice"])
+            seen.update(row["squad"])      # benches too, for the pitch view
 
         gameweeks[str(gw)] = {
             "finished": api.is_finished(gw),
@@ -61,12 +63,18 @@ def snapshot(league_id, my_entry, horizon=3, top=8):
                     "chip": r["chip"],
                     "captain": r["captain"],
                     "captainPoints": r["captain_points"],
+                    "vice": r["vice"],
                     "starters": r["starters"],
+                    # Full 15 in pick order, so the pitch can show the bench.
+                    "squad": r["squad"],
                 }
                 for r in rows
             ],
             "ownership": {str(k): v for k, v in counts.items()},
-            "playerPoints": {str(p): points.get(p, 0) for p in counts},
+            "playerPoints": {
+                str(p): points.get(p, 0)
+                for row in rows for p in row["squad"]
+            },
         }
 
     suggestions = an.rank_players(

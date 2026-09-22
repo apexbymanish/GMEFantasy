@@ -84,6 +84,21 @@ red and every rival in `--ink-3`, with each team named at the end of its own
 line. Identity comes from the label, so the chart stays readable and colour is
 never the only channel.
 
+## The pitch
+
+The line-up is drawn as a pitch, because that is how a football squad is read:
+goalkeeper at the back, forwards at the top, bench on a strip below. Formation
+falls out of the squad rather than being stored - count the positions in the XI.
+
+It keeps a small palette of its own, scoped to `.pitch-card`, because grass is
+green in both themes. The shirts stay light in both so they read on it, and the
+theme's own tokens resume at the bench strip. Markings are clipped to the grass,
+so the centre circle reads as a halfway arc rather than spilling over the bench.
+
+Bench players show their points in a muted chip. That is the point of showing
+them: a manager who won a gameweek while leaving ten points on the bench should
+be able to see it at a glance.
+
 ## Typography
 
 | Role | Face | Notes |

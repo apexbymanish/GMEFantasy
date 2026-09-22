@@ -326,6 +326,7 @@ function renderGw() {
       <span class="val num">${r.points}</span>
     </div>`).join("");
 
+  renderPitch();
   renderDiff();
 }
 
@@ -387,6 +388,69 @@ function renderDiff() {
   $("diff-theirs").innerHTML = missed.length
     ? `<ul class="dlist">${missed.map(item).join("")}</ul>`
     : `<p class="empty">Nobody else had a differential either.</p>`;
+}
+
+/* ---------------- line-up on a pitch ---------------- */
+const ROWS = ["GKP", "DEF", "MID", "FWD"];
+const pitchWho = $("pitch-who");
+let pitchEntry = null;   // null means "follow the picked team, or the winner"
+
+pitchWho.addEventListener("change", () => {
+  pitchEntry = pitchWho.value ? +pitchWho.value : null;
+  renderPitch();
+});
+
+function pitchSubject() {
+  const rows = D.gameweeks[activeGw].rows;
+  const wanted = pitchEntry ?? ME;
+  return rows.find(r => r.entry === wanted) || rows[0];   // fall back to the week's winner
+}
+
+function kit(id, points, badge, benched) {
+  const p = P[id] || { name: "?", team: "", pos: "" };
+  return `<div class="kit">
+    ${badge ? `<span class="arm ${badge === "V" ? "v" : ""}">${badge}</span>` : ""}
+    <div class="shirt">${esc(p.team)}</div>
+    <div class="nm">${esc(p.name)}</div>
+    <div class="pt ${points ? "" : "zero"}">${points}</div>
+  </div>`;
+}
+
+function renderPitch() {
+  const gw = D.gameweeks[activeGw];
+  const pts = gw.playerPoints;
+  const subject = pitchSubject();
+
+  pitchWho.innerHTML = `<option value="">${picked() ? "Your team" : "Gameweek winner"}</option>` +
+    gw.rows.map(r => `<option value="${r.entry}">${esc(r.team)}</option>`).join("");
+  pitchWho.value = pitchEntry ? String(pitchEntry) : "";
+
+  const starters = subject.starters;
+  const bench = subject.squad.slice(11);
+  const badge = id => (id === subject.captain ? "C" : id === subject.vice ? "V" : "");
+
+  const byRow = {};
+  starters.forEach(id => {
+    const pos = (P[id] || {}).pos || "MID";
+    (byRow[pos] = byRow[pos] || []).push(id);
+  });
+  const formation = ROWS.slice(1).map(r => (byRow[r] || []).length).join("-");
+
+  $("pitch").innerHTML = ROWS.map(pos => {
+    const ids = byRow[pos] || [];
+    return ids.length ? `<div class="row">${ids.map(id =>
+      kit(id, pts[id] ?? 0, badge(id))).join("")}</div>` : "";
+  }).join("");
+
+  $("bench").innerHTML = `<div class="bench-label">Bench</div>` +
+    bench.map(id => kit(id, pts[id] ?? 0, badge(id), true)).join("");
+
+  const captainPts = (pts[subject.captain] ?? 0) * 2;
+  $("pitch-caption").innerHTML =
+    `<b>${esc(subject.team)}</b> in gameweek ${activeGw} &middot; ${formation} &middot;
+     ${subject.points} points${subject.hit ? ` after a &minus;${subject.hit} hit` : ""}.
+     Captain ${esc((P[subject.captain] || {}).name || "-")} returned ${captainPts}.
+     ${subject.bench ? `${subject.bench} left on the bench.` : "Nothing wasted on the bench."}`;
 }
 
 /* ---------------- planning ---------------- */

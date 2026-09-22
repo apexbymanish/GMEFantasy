@@ -231,7 +231,8 @@ def cmd_table(args):
 
 def cmd_export(args):
     data = export_mod.write(
-        args.out, args.league, args.me, horizon=args.horizon, top=args.top
+        args.out, args.league, args.me, horizon=args.horizon, top=args.top,
+        paid=_load_paid(_payments_path(args)),
     )
     size = os.path.getsize(args.out) / 1024
     print(f"Wrote {args.out} ({size:.0f} KB)")

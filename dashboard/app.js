@@ -550,9 +550,16 @@ Z.weeks.forEach(w => w.winners.forEach(win => PAY_LINES.push({
 })));
 const RESERVED_SPECIALS = Object.values(Z.specials).reduce((a, b) => a + b, 0);
 const RESERVED_PODIUM = Z.champion + Z.runnerUp;
-const LOCAL_KEY = "gme-payments-v1";
+const LOCAL_KEY = "gme-payments-v2";
 
-let paidIds = new Set();
+/* Three layers, in order of authority:
+   1. the artifact's shared store, when the page is published there;
+   2. otherwise, the record baked in at build time by the treasurer;
+   3. plus anything this browser has toggled since, kept as a delta so a
+      later build that settles a prize is not fought by stale local state. */
+const BASE_PAID = new Set(D.paid || []);
+let overrides = {};
+let paidIds = new Set(BASE_PAID);
 let store = null;          // the artifact's shared store, when there is one
 let mode = "loading";      // loading | shared | local | readonly
 
@@ -602,7 +609,9 @@ function renderMoney() {
     "Saved with the page, so everyone you share it with sees the same record. Click again to undo." +
     (b.unallocated ? ` <b>Books off by ${krw(b.unallocated)} KRW.</b>` : " Books reconcile.");
   else if (mode === "local") note.innerHTML =
-    "Saved in this browser only - this copy is not the published page. Click again to undo." +
+    (BASE_PAID.size
+      ? `Ledger from the last build (${BASE_PAID.size} settled). Changes you make here stay in this browser. `
+      : "Saved in this browser only - this copy is not the published page. Click again to undo. ") +
     (b.unallocated ? ` <b>Books off by ${krw(b.unallocated)} KRW.</b>` : " Books reconcile.");
   else note.textContent = "Payments are read-only in this view.";
 
@@ -647,9 +656,23 @@ function renderMoney() {
     <div class="h">${a.h}</div><div class="d">${a.d}</div></div>`).join("");
 }
 
+function applyOverrides() {
+  paidIds = new Set(BASE_PAID);
+  for (const [id, on] of Object.entries(overrides)) {
+    on ? paidIds.add(id) : paidIds.delete(id);
+  }
+}
+
 function saveLocal() {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify([...paidIds])); }
-  catch (e) { /* private mode: the toggle still works for this visit */ }
+  try {
+    // Drop overrides the build has caught up with, so they do not linger.
+    for (const [id, on] of Object.entries(overrides)) {
+      if (BASE_PAID.has(id) === on) delete overrides[id];
+    }
+    Object.keys(overrides).length
+      ? localStorage.setItem(LOCAL_KEY, JSON.stringify(overrides))
+      : localStorage.removeItem(LOCAL_KEY);
+  } catch (e) { /* private mode: the toggle still works for this visit */ }
 }
 
 $("pay-table").addEventListener("click", async e => {
@@ -659,8 +682,8 @@ $("pay-table").addEventListener("click", async e => {
   const nowPaid = !paidIds.has(line.id);
 
   if (mode === "local") {
-    nowPaid ? paidIds.add(line.id) : paidIds.delete(line.id);
-    saveLocal(); renderMoney(); return;
+    overrides[line.id] = nowPaid;
+    applyOverrides(); saveLocal(); renderMoney(); return;
   }
   btn.disabled = true;
   try {
@@ -689,9 +712,10 @@ $("pay-table").addEventListener("click", async e => {
     return;
   }
   try {
-    const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
-    if (Array.isArray(saved)) paidIds = new Set(saved);
+    const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}");
+    if (saved && typeof saved === "object" && !Array.isArray(saved)) overrides = saved;
   } catch (e) { /* private mode */ }
+  applyOverrides();
   mode = "local";
   renderMoney();
 })();

@@ -12,7 +12,7 @@ from . import prizes as pz
 from . import remind as rm
 
 
-def snapshot(league_id, my_entry, horizon=3, top=8):
+def snapshot(league_id, my_entry, horizon=3, top=8, paid=()):
     boot = api.bootstrap()
     players = an.player_index(boot)
     teams = an.team_index(boot)
@@ -156,6 +156,9 @@ def snapshot(league_id, my_entry, horizon=3, top=8):
         "horizon": horizon,
         "upcoming": upcoming,
         "reminder": rm.build(league_id, top_fixtures=0),
+        # Prizes the treasurer has actually handed over. Travels with the
+        # build so every viewer sees the same ledger, not just this browser.
+        "paid": sorted(paid),
         "prizes": pz.ledger(season, gameweeks, [
             {
                 "rank": r["rank"], "entry": r["entry"], "team": r["entry_name"],

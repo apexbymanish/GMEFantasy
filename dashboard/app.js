@@ -560,6 +560,7 @@ const LOCAL_KEY = "gme-payments-v2";
    3. plus anything this browser has toggled since, kept as a delta so a
       later build that settles a prize is not fought by stale local state. */
 const BASE_PAID = new Set(D.paid || []);
+const PAID_ON = D.paidOn || {};      // id -> YYYY-MM-DD, from payments.json
 let overrides = {};
 let paidIds = new Set(BASE_PAID);
 let store = null;          // the artifact's shared store, when there is one
@@ -596,7 +597,8 @@ function renderMoney() {
       <td class="r num col-opt">${l.points}</td>
       <td class="r krw">${krw(l.amount)}</td>
       <td><button class="btn sm pay ${paid ? "on" : ""}" data-id="${l.id}"
-        ${canPay ? "" : "disabled"} type="button">${paid ? "Paid" : "Mark paid"}</button></td>
+        ${canPay ? "" : "disabled"} type="button">${paid ? "Paid" : "Mark paid"}</button>${
+        paid && PAID_ON[l.id] ? ` <span class="num" style="color:var(--ink-3)">${PAID_ON[l.id]}</span>` : ""}</td>
     </tr>`;
   });
   $("pay-table").innerHTML = t + `</tbody></table>`;

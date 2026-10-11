@@ -8,5 +8,6 @@ __pycache__/
 dashboard/data.json
 dashboard/index.html
 dashboard/pub.html
+# Old paid list, replaced by the committed payments.json history.
 dashboard/payments.json
 *.xlsx

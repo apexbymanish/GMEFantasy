@@ -1,0 +1,62 @@
+# Rebuild the public dashboard from the FPL API and publish it.
+#
+# Runs every 3 hours, whenever payments.json is pushed, and on demand
+# (Actions tab -> Publish -> Run workflow). Commits only when the page
+# changed, so weeks without football stay quiet.
+#
+# Only docs/index.html, the page with managers' real names removed, is
+# committed. The full data with names exists on the runner and nowhere else.
+name: Publish
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  push:
+    branches: [main]
+    paths: [payments.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        run: |
+          pip install --quiet pytest
+          python -m pytest tests/ -q
+
+      - name: Export from FPL
+        run: python -m fpl export
+
+      - name: Build
+        run: python dashboard/build.py
+
+      - name: Publish if the page changed
+        run: |
+          # The build stamps the time on every run; compare without it.
+          strip() { sed -E 's/"generated":"[^"]*"//'; }
+          if git show HEAD:docs/index.html | strip | cmp -s - <(strip < docs/index.html); then
+            echo "No change since the last publish."
+            exit 0
+          fi
+          label=$(python -c "import json; d=json.load(open('dashboard/data.json')); g=d['gameweeks'][str(d['currentGw'])]; print(f\"GW{d['currentGw']} {'final' if g['finished'] else 'live'}\")")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git commit -m "Through ${label}"
+          git pull --rebase --quiet
+          git push

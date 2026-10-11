@@ -1,0 +1,64 @@
+{
+  "_how": [
+    "Payment history for the weekly prizes, oldest first. Never edit or delete",
+    "a past line: append a new one. A prize's latest line is its current state.",
+    "Smallest valid line: {\"id\": \"gw6-2586046\", \"status\": \"paid\", \"on\": \"2026-10-14\"}",
+    "Or use: python3 -m fpl pay 6   /   python3 -m fpl pay 6 --undo"
+  ],
+  "history": [
+    {
+      "id": "gw1-2586046",
+      "gw": 1,
+      "team": "suubaash",
+      "amount": 3500,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw1-6144939",
+      "gw": 1,
+      "team": "Manish's Team",
+      "amount": 3500,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw2-1844688",
+      "gw": 2,
+      "team": "Carrickonthewheel",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw3-2586046",
+      "gw": 3,
+      "team": "suubaash",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw4-5950871",
+      "gw": 4,
+      "team": "Falano",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw5-2291806",
+      "gw": 5,
+      "team": "21Loading",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-09-22",
+      "note": "carried over from the first record; exact date not kept"
+    }
+  ]
+}

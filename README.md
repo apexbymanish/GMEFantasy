@@ -81,7 +81,7 @@ sources are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 python3 -m pytest tests/ -q
 ```
 
-29 tests, no network — the analysis layer is pure functions over fixture data.
+63 tests, no network — the analysis layer is pure functions over fixture data.
 
 ## Dashboard
 
@@ -136,30 +136,56 @@ over the season is how much has actually been handed over.
 
 ```sh
 python3 -m fpl books            # collected, paid, due, reserved, balance
-python3 -m fpl pay 1 2 3 4 5    # mark those gameweeks settled
-python3 -m fpl pay --undo       # and back again
+python3 -m fpl pay 6            # mark GW6 paid, dated today
+python3 -m fpl pay 6 --on 2026-10-14 --note "bank transfer"
+python3 -m fpl pay 6 --undo     # mark it unpaid again
 python3 -m fpl excel            # five-sheet workbook
 ```
 
 `unallocated` must always read zero: balance on hand minus everything still
 owed. A non-zero figure means the prize sheet no longer adds up to the pool.
 
-The dashboard keeps the same ledger, stored server-side, so a payment marked
-there is visible to everyone who opens the page. The CLI keeps its own copy in
-`dashboard/payments.json`; the two are separate records, so settle in one place.
+### Payment history
+
+`payments.json` is the record, and it is committed. It is a history, not a
+list: every change appends a line, nothing is overwritten, and a prize's latest
+line is its current state. `fpl pay` writes it, or edit it by hand:
+
+```json
+{"id": "gw6-1844688", "status": "paid", "on": "2026-10-14", "note": "bank transfer"}
+```
+
+The id is `gw<gameweek>-<entry id>`, as `fpl books` lists them. To reverse a
+payment, append a line with `"status": "unpaid"`; do not delete the old one.
+It holds entry ids, team names and amounts only, never real names.
+
+Push the change and the site updates within a few minutes (see below).
+Payments toggled on the public page itself stay in that visitor's browser.
 
 
 ## Publishing
 
-The site is GitHub Pages, served from `docs/`. To update it after a gameweek:
+The site is GitHub Pages, served from `docs/`. It updates itself:
+`.github/workflows/publish.yml` runs the export and build on GitHub and commits
+`docs/index.html` when anything changed. It runs
+
+- every 3 hours,
+- whenever `payments.json` is pushed,
+- and on demand: **Actions → Publish → Run workflow**.
+
+A run that finds nothing new commits nothing. While a gameweek is live the site
+can trail the real scores by up to 3 hours, and the header says "live, not final".
+
+GitHub pauses scheduled workflows on a repo with no commits for 60 days; the
+workflow's own commits keep it awake during the season.
+
+To publish by hand instead:
 
 ```sh
-python3 -m fpl export        # pull the new gameweek from the FPL API
-python3 dashboard/build.py   # rebuild both copies
+python3 -m fpl export
+python3 dashboard/build.py
 git add docs && git commit -m "Through GW6" && git push
 ```
-
-It is live about a minute later.
 
 ### What is public and what is not
 
@@ -175,5 +201,4 @@ FPL site; their real names are not. `dashboard/data.json` is git-ignored for
 the same reason — regenerate it with `fpl export`.
 
 Payments marked on the public site are stored in each visitor's own browser,
-so they are not shared. The published Claude artifact keeps a shared ledger;
-use that one for the real record.
+so they are not shared. `payments.json` is the real record.

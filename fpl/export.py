@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from . import analysis as an
 from . import api
+from . import payments as pay
 from . import prizes as pz
 from . import remind as rm
 
@@ -25,7 +26,7 @@ def settled(season, gameweeks):
     )
 
 
-def snapshot(league_id, my_entry, horizon=3, top=8, paid=()):
+def snapshot(league_id, my_entry, horizon=3, top=8, history=()):
     boot = api.bootstrap()
     players = an.player_index(boot)
     teams = an.team_index(boot)
@@ -171,7 +172,12 @@ def snapshot(league_id, my_entry, horizon=3, top=8, paid=()):
         "reminder": rm.build(league_id, top_fixtures=0),
         # Prizes the treasurer has actually handed over. Travels with the
         # build so every viewer sees the same ledger, not just this browser.
-        "paid": sorted(paid),
+        "paid": pay.paid_ids(history),
+        # When each prize currently marked paid was paid, for the books.
+        "paidOn": {
+            i: e.get("on") for i, e in pay.state(history).items()
+            if e["status"] == "paid"
+        },
         "prizes": pz.ledger(*settled(season, gameweeks), [
             {
                 "rank": r["rank"], "entry": r["entry"], "team": r["entry_name"],

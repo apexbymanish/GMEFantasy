@@ -8,6 +8,7 @@ import time
 from . import analysis as an
 from . import api
 from . import export as export_mod
+from . import payments as pay_mod
 from . import remind as remind_mod
 from . import treasury as tr
 from .config import LEAGUE_ID, MY_ENTRY
@@ -232,7 +233,7 @@ def cmd_table(args):
 def cmd_export(args):
     data = export_mod.write(
         args.out, args.league, args.me, horizon=args.horizon, top=args.top,
-        paid=_load_paid(_payments_path(args)),
+        history=pay_mod.load(_payments_path(args)),
     )
     size = os.path.getsize(args.out) / 1024
     print(f"Wrote {args.out} ({size:.0f} KB)")
@@ -250,15 +251,7 @@ def _payments_path(args):
 
 
 def _load_paid(path):
-    if not os.path.exists(path):
-        return []
-    with open(path) as fh:
-        return json.load(fh).get("paid", [])
-
-
-def _save_paid(path, paid):
-    with open(path, "w") as fh:
-        json.dump({"paid": sorted(set(paid))}, fh, indent=2)
+    return pay_mod.paid_ids(pay_mod.load(path))
 
 
 def _snapshot(args):
@@ -301,7 +294,8 @@ def cmd_books(args):
 def cmd_pay(args):
     snap = _snapshot(args)
     path = _payments_path(args)
-    paid = set(_load_paid(path))
+    history = pay_mod.load(path)
+    paid = set(pay_mod.paid_ids(history))
     lines = {l["id"]: l for l in tr.items(snap["prizes"])}
 
     targets = [l for l in lines.values() if l["gw"] in args.gameweeks] if args.gameweeks \
@@ -316,7 +310,10 @@ def cmd_pay(args):
         elif not args.undo and line["id"] not in paid:
             paid.add(line["id"]); changed.append(("paid", line))
 
-    _save_paid(path, paid)
+    for action, line in changed:
+        pay_mod.record(history, line, action, on=args.on, note=args.note)
+    if changed:
+        pay_mod.save(path, history)
     if not changed:
         print("Nothing to change.")
     for action, line in changed:
@@ -367,8 +364,8 @@ def main(argv=None):
     parser.add_argument("--league", type=int, default=LEAGUE_ID, help="league id")
     parser.add_argument("--me", type=int, default=MY_ENTRY, help="your entry id")
     parser.add_argument("--data", default="dashboard/data.json", help="snapshot file")
-    parser.add_argument("--paid-file", default="dashboard/payments.json",
-                        help="record of prizes already paid")
+    parser.add_argument("--paid-file", default="payments.json",
+                        help="payment history for the weekly prizes")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("table", help="current league standings")
@@ -407,6 +404,8 @@ def main(argv=None):
     p = sub.add_parser("pay", help="mark weekly prizes as paid")
     p.add_argument("gameweeks", nargs="*", type=int, help="gameweeks to settle (default: all due)")
     p.add_argument("--undo", action="store_true", help="mark them unpaid again")
+    p.add_argument("--on", help="date of the payment, YYYY-MM-DD (default: today)")
+    p.add_argument("--note", default="", help="optional note kept in the history")
     p.set_defaults(func=cmd_pay)
 
     p = sub.add_parser("excel", help="write the books to a workbook")

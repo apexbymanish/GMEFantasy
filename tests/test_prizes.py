@@ -98,3 +98,12 @@ class TestLedger:
 
     def test_remaining_weekly_money_excludes_played_gameweeks(self):
         assert self.led["weeklyRemaining"] == 270_000 - 14_000
+
+
+class TestSettled:
+    def test_a_live_gameweek_is_left_out_of_prize_money(self):
+        from fpl.export import settled
+        season = {5: ["done"], 6: ["live"]}
+        gameweeks = {"5": {"finished": True}, "6": {"finished": False}}
+        s, g = settled(season, gameweeks)
+        assert list(s) == [5] and list(g) == ["5"]

@@ -12,6 +12,19 @@ from . import prizes as pz
 from . import remind as rm
 
 
+def settled(season, gameweeks):
+    """Only the finished gameweeks, for prize money.
+
+    A live gameweek's leader can still be overtaken, so it must not show up
+    as a payable line until FPL marks the week finished.
+    """
+    done = {gw for gw, data in gameweeks.items() if data["finished"]}
+    return (
+        {gw: rows for gw, rows in season.items() if str(gw) in done},
+        {gw: data for gw, data in gameweeks.items() if gw in done},
+    )
+
+
 def snapshot(league_id, my_entry, horizon=3, top=8, paid=()):
     boot = api.bootstrap()
     players = an.player_index(boot)
@@ -159,7 +172,7 @@ def snapshot(league_id, my_entry, horizon=3, top=8, paid=()):
         # Prizes the treasurer has actually handed over. Travels with the
         # build so every viewer sees the same ledger, not just this browser.
         "paid": sorted(paid),
-        "prizes": pz.ledger(season, gameweeks, [
+        "prizes": pz.ledger(*settled(season, gameweeks), [
             {
                 "rank": r["rank"], "entry": r["entry"], "team": r["entry_name"],
             }

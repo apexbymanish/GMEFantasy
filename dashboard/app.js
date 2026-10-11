@@ -76,7 +76,9 @@ who.addEventListener("change", () => {
 
 /* ---------------- header ---------------- */
 $("league-name").textContent = D.league.name;
-$("league-sub").textContent = `${D.managers.length} managers, gameweek ${D.currentGw} of 38`;
+const LIVE = D.gameweeks[D.currentGw] && !D.gameweeks[D.currentGw].finished;
+$("league-sub").textContent = `${D.managers.length} managers, gameweek ${D.currentGw} of 38`
+  + (LIVE ? " (live, not final)" : "");
 $("gen-time").textContent = new Date(D.generated)
   .toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 

@@ -59,6 +59,14 @@
       "status": "paid",
       "on": "2026-09-22",
       "note": "carried over from the first record; exact date not kept"
+    },
+    {
+      "id": "gw6-1844688",
+      "gw": 6,
+      "team": "Carrickonthewheel",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-10-14"
     }
   ]
 }

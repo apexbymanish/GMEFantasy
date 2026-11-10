@@ -47,11 +47,37 @@ def flagged_players(boot, squads):
     return out
 
 
-def build(league_id, top_fixtures=4):
-    boot = api.bootstrap()
+def _deadline(boot):
     gw = api.next_gw()
     event = next(e for e in boot["events"] if e["id"] == gw)
-    deadline = datetime.fromisoformat(event["deadline_time"].replace("Z", "+00:00"))
+    return gw, datetime.fromisoformat(event["deadline_time"].replace("Z", "+00:00"))
+
+
+def _deadline_lines(deadline):
+    lines = []
+    for label, zone in ZONES:
+        local = deadline.astimezone(ZoneInfo(zone))
+        hour = local.hour % 12 or 12
+        lines.append(f"Deadline {label}: {local:%a %d %b}, {hour}:{local:%M %p}")
+    lines.append(f"({_countdown(deadline)})")
+    return lines
+
+
+def build_short():
+    """Deadline only: a few lines for a quick nudge in the group chat."""
+    gw, deadline = _deadline(api.bootstrap())
+    return "\n".join([
+        f"GME FANTASY - GW{gw} DEADLINE",
+        "",
+        *_deadline_lines(deadline),
+        "",
+        "Set your team and captain!",
+    ])
+
+
+def build(league_id, top_fixtures=4):
+    boot = api.bootstrap()
+    gw, deadline = _deadline(boot)
 
     league_data = api.league(league_id)
     managers = an.managers(league_data)
@@ -74,10 +100,7 @@ def build(league_id, top_fixtures=4):
     add = lines.append
     add(f"GME FANTASY LEAGUE - GAMEWEEK {gw}")
     add("")
-    for label, zone in ZONES:
-        local = deadline.astimezone(ZoneInfo(zone))
-        add(f"Deadline {label}: {local.strftime('%a %d %b, %I:%M %p').lstrip('0')}")
-    add(f"({_countdown(deadline)})")
+    lines.extend(_deadline_lines(deadline))
     add("")
     add(f"{pz.weekly_prize(gw):,} KRW to the highest score this week.")
     add("")

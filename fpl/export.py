@@ -166,10 +166,13 @@ def snapshot(league_id, my_entry, horizon=3, top=8, history=()):
         "positions": {str(k): v for k, v in an.league_position_by_gw(season).items()},
         "gameweeks": gameweeks,
         "players": {str(p): describe(p) for p in sorted(seen)},
+        # Club short name -> Premier League club code, for the badge images.
+        "clubCodes": {t["short_name"]: t["code"] for t in boot["teams"]},
         "suggestions": suggestions,
         "horizon": horizon,
         "upcoming": upcoming,
         "reminder": rm.build(league_id, top_fixtures=0),
+        "reminderShort": rm.build_short(),
         # Prizes the treasurer has actually handed over. Travels with the
         # build so every viewer sees the same ledger, not just this browser.
         "paid": pay.paid_ids(history),

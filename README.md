@@ -124,6 +124,7 @@ Two readings the sheet leaves open, both surfaced rather than silently decided:
 
 ```sh
 python3 -m fpl remind        # plain text for the group chat
+python3 -m fpl remind --short   # deadline only
 ```
 
 Deadline in KST and NPT, the table, every flagged player in the league's squads,

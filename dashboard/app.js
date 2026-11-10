@@ -420,13 +420,91 @@ function pitchSubject() {
   return rows.find(r => r.entry === wanted) || rows[0];   // fall back to the week's winner
 }
 
-function kit(id, points, badge, benched) {
+/* Club shirts, drawn rather than copied: body, sleeves, stripes, trim
+   colour and collar style. Colours only, no crests or sponsors.
+   [body, sleeves, stripe or null, trim, collar] */
+const CLUBS = {
+  ARS: ["#DB0007", "#FFFFFF", null, "#FFFFFF", "v"],
+  AVL: ["#7A1E3E", "#95BFE5", null, "#95BFE5", "crew"],
+  BHA: ["#0057B8", "#0057B8", "#FFFFFF", "#FFFFFF", "crew"],
+  BOU: ["#DA291C", "#111111", "#111111", "#111111", "v"],
+  BRE: ["#E30613", "#E30613", "#FFFFFF", "#111111", "crew"],
+  CHE: ["#034694", "#034694", null, "#FFFFFF", "crew"],
+  COV: ["#59CBE8", "#59CBE8", null, "#FFFFFF", "polo"],
+  CRY: ["#1B458F", "#1B458F", "#C4122E", "#C4122E", "crew"],
+  EVE: ["#003399", "#003399", null, "#FFFFFF", "v"],
+  FUL: ["#FFFFFF", "#FFFFFF", null, "#111111", "crew"],
+  HUL: ["#F5A12D", "#F5A12D", "#111111", "#111111", "crew"],
+  IPS: ["#3A64A3", "#3A64A3", null, "#FFFFFF", "polo"],
+  LEE: ["#FFFFFF", "#FFFFFF", null, "#1D428A", "v"],
+  LIV: ["#C8102E", "#C8102E", null, "#FFFFFF", "crew"],
+  MCI: ["#6CABDD", "#6CABDD", null, "#1C2C5B", "crew"],
+  MUN: ["#DA291C", "#DA291C", null, "#FFFFFF", "polo"],
+  NEW: ["#111111", "#111111", "#FFFFFF", "#FFFFFF", "crew"],
+  NFO: ["#DD0000", "#DD0000", null, "#FFFFFF", "v"],
+  SUN: ["#EB172B", "#EB172B", "#FFFFFF", "#111111", "crew"],
+  TOT: ["#FFFFFF", "#FFFFFF", null, "#132257", "crew"],
+};
+const KEEPER = ["#C6E35B", "#C6E35B", null, "#2B3A12", "crew"];
+const PLAIN = ["#F7F8FA", "#F7F8FA", null, "#5A6069", "crew"];
+const SHIRT = "M22 3 10 7 2 20l8 5 4-6v34h32V19l4 6 8-5-8-13-12-4c-2.6 4.6-13.4 4.6-16 0Z";
+const SLEEVE_L = "M16 5 10 7 2 20l8 5 4-6Z", SLEEVE_R = "M44 5l6 2 8 13-8 5-4-6Z";
+const COLLARS = {
+  crew: t => `<path d="M22 3c2.6 4.6 13.4 4.6 16 0" fill="none" stroke="${t}" stroke-width="2.6"/>`,
+  v: t => `<path d="M23.4 3.4 30 10l6.6-6.6Z" fill="rgba(0,0,0,.3)"/>
+           <path d="M22 3l8 8.6L38 3" fill="none" stroke="${t}" stroke-width="2.4" stroke-linejoin="round"/>`,
+  polo: t => `<path d="M30 7v7" stroke="${t}" stroke-width="1.6"/>
+              <path d="M22 3l5 6.4L30 7l3 2.4L38 3c-2.6 3-13.4 3-16 0Z" fill="${t}"
+                stroke="rgba(0,0,0,.25)" stroke-width=".6" stroke-linejoin="round"/>`,
+};
+/* Official club badges, loaded from the Premier League's own image server
+   (not copied into this page). If one fails to load it is simply hidden. */
+const CODES = D.clubCodes || {};
+const crest = club => CODES[club]
+  ? `<img class="crest" src="https://resources.premierleague.com/premierleague/badges/50/t${CODES[club]}.png"
+      alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+function shirt(club, keeper) {
+  const [body, sleeve, stripe, trim, collar] = keeper ? KEEPER : (CLUBS[club] || PLAIN);
+  const id = `k-${keeper ? "gk" : club || "x"}`;
+  const stripes = stripe
+    ? `<g clip-path="url(#${id}c)" fill="${stripe}">${[17.2, 23.6, 30, 36.4, 42.8].map(x =>
+        `<rect x="${x - 1.7}" y="0" width="3.4" height="56"/>`).join("")}</g>` : "";
+  return `<svg class="shirt" viewBox="0 0 60 56" aria-hidden="true">
+    <defs>
+      <clipPath id="${id}c"><path d="${SHIRT}"/></clipPath>
+      <linearGradient id="${id}g" x1="0" x2="1" y1="0" y2=".25">
+        <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+        <stop offset=".38" stop-color="#fff" stop-opacity="0"/>
+        <stop offset=".62" stop-color="#000" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".26"/>
+      </linearGradient>
+    </defs>
+    <path d="${SHIRT}" fill="${body}"/>${stripes}
+    <path d="${SLEEVE_L}" fill="${sleeve}"/><path d="${SLEEVE_R}" fill="${sleeve}"/>
+    <path d="M3.4 18.4 11 23.2M56.6 18.4 49 23.2" stroke="${trim}" stroke-width="2.6"/>
+    <g clip-path="url(#${id}c)" fill="none" stroke="rgba(0,0,0,.16)" stroke-width=".9">
+      <path d="M14 19.5V53M46 19.5V53M14 50.6h32"/>
+      <path d="M21 26c1 7 .4 14-1 22M40 28c-1 6-.6 13 .6 20" stroke="rgba(0,0,0,.08)" stroke-width="1.6"/>
+    </g>
+    <path d="${SHIRT}" fill="url(#${id}g)"/>
+    ${COLLARS[collar](trim)}
+    <path d="${SHIRT}" fill="none" stroke="rgba(0,0,0,.38)" stroke-width="1" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+/* Points as scored for this line-up: the captain's count double (triple
+   on Triple Captain). Ten or more is a haul; two or fewer is a blank. */
+function kit(id, raw, badge, mult, slot) {
   const p = P[id] || { name: "?", team: "", pos: "" };
-  return `<div class="kit">
+  const points = raw * (mult || 1);
+  const tier = points >= 10 ? "haul" : points <= 2 ? "blank" : "";
+  const why = mult > 1 ? `, ${raw} doubled as captain`.replace("doubled", mult === 3 ? "tripled" : "doubled") : "";
+  return `<div class="kit ${tier}" title="${esc(p.name)}, ${esc(p.team)}: ${points} pts${why}">
+    ${slot ? `<span class="slot">${slot}</span>` : ""}
     ${badge ? `<span class="arm ${badge === "V" ? "v" : ""}">${badge}</span>` : ""}
-    <div class="shirt">${esc(p.team)}</div>
+    <div class="shirt-wrap">${shirt(p.team, p.pos === "GKP")}${crest(p.team)}</div>
     <div class="nm">${esc(p.name)}</div>
-    <div class="pt ${points ? "" : "zero"}">${points}</div>
+    <div class="pt">${points}</div>
   </div>`;
 }
 
@@ -450,14 +528,21 @@ function renderPitch() {
   });
   const formation = ROWS.slice(1).map(r => (byRow[r] || []).length).join("-");
 
-  $("pitch").innerHTML = ROWS.map(pos => {
+  const capMult = subject.chip === "3xc" ? 3 : 2;
+  const mult = id => (id === subject.captain ? capMult : 1);
+  const marks = `<div class="marks" aria-hidden="true"><i class="goal"></i><i class="six"></i>
+    <i class="box"></i><i class="arc"></i><i class="half"></i><i class="circle"></i></div>`;
+  $("pitch").innerHTML = marks + ROWS.map(pos => {
     const ids = byRow[pos] || [];
     return ids.length ? `<div class="row">${ids.map(id =>
-      kit(id, pts[id] ?? 0, badge(id))).join("")}</div>` : "";
+      kit(id, pts[id] ?? 0, badge(id), mult(id))).join("")}</div>` : "";
   }).join("");
 
-  $("bench").innerHTML = `<div class="bench-label">Bench</div>` +
-    bench.map(id => kit(id, pts[id] ?? 0, badge(id), true)).join("");
+  // Bench Boost counts the bench, so it is scored like the XI.
+  const boosted = subject.chip === "bboost";
+  $("bench").classList.toggle("boosted", boosted);
+  $("bench").innerHTML = `<div class="bench-label">${boosted ? "Bench, boosted" : "Bench"}</div>` +
+    bench.map((id, i) => kit(id, pts[id] ?? 0, badge(id), 1, i === 0 ? "GK" : String(i))).join("");
 
   const captainPts = (pts[subject.captain] ?? 0) * 2;
   $("pitch-caption").innerHTML =
@@ -541,11 +626,26 @@ function renderPicks() {
      expected goal involvement, fixtures and value. Injured and doubtful players excluded.`;
 }
 
-$("remind-text").textContent = D.reminder;
+/* Two versions: a deadline-only nudge (default) and the full message. */
+let remindKind = D.reminderShort ? "short" : "full";
+const remindText = () => (remindKind === "short" ? D.reminderShort : D.reminder);
+const remindSeg = $("remind-seg");
+if (!D.reminderShort) remindSeg.hidden = true;
+const renderReminder = () => {
+  $("remind-text").textContent = remindText();
+  remindSeg.querySelectorAll("button").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.kind === remindKind));
+};
+remindSeg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  remindKind = b.dataset.kind;
+  renderReminder();
+});
+renderReminder();
 $("copy-btn").addEventListener("click", async e => {
   const btn = e.currentTarget, original = btn.textContent;
   try {
-    await navigator.clipboard.writeText(D.reminder);
+    await navigator.clipboard.writeText(remindText());
     btn.textContent = "Copied";
   } catch (err) {
     const r = document.createRange();

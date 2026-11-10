@@ -243,7 +243,10 @@ def cmd_export(args):
 
 
 def cmd_remind(args):
-    print(remind_mod.build(args.league, top_fixtures=args.fixtures))
+    if args.short:
+        print(remind_mod.build_short())
+    else:
+        print(remind_mod.build(args.league, top_fixtures=args.fixtures))
 
 
 def _payments_path(args):
@@ -396,6 +399,7 @@ def main(argv=None):
 
     p = sub.add_parser("remind", help="paste-ready deadline reminder for the group chat")
     p.add_argument("--fixtures", type=int, default=4, help="0 for all fixtures")
+    p.add_argument("--short", action="store_true", help="deadline only")
     p.set_defaults(func=cmd_remind)
 
     p = sub.add_parser("books", help="prize pool: paid, due and remaining")

@@ -499,7 +499,7 @@ function kit(id, raw, badge, mult, slot) {
   const points = raw * (mult || 1);
   const tier = points >= 10 ? "haul" : points <= 2 ? "blank" : "";
   const why = mult > 1 ? `, ${raw} doubled as captain`.replace("doubled", mult === 3 ? "tripled" : "doubled") : "";
-  return `<div class="kit ${tier}" title="${esc(p.name)}, ${esc(p.team)}: ${points} pts${why}">
+  return `<div class="kit ${tier}${p.photo ? "" : " nophoto"}" title="${esc(p.name)}, ${esc(p.team)}: ${points} pts${why}">
     ${slot ? `<span class="slot">${slot}</span>` : ""}
     ${badge ? `<span class="arm ${badge === "V" ? "v" : ""}">${badge}</span>` : ""}
     <div class="shirt-wrap">${shirt(p.team, p.pos === "GKP")}${crest(p.team)}</div>

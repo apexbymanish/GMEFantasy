@@ -7,7 +7,9 @@ Two destinations with different data:
                         what `fpl serve` runs locally, for your eyes.
   docs/index.html       the same page with real names removed, because
                         GitHub Pages is public and those names belong to
-                        other people. Team names are pseudonyms; names are not.
+                        other people. Only a code name is kept ("Doe·Ja"),
+                        shown when a team is clicked: the league can tell
+                        who is who; a stranger cannot.
 
 The page must be self-contained either way: the FPL API blocks cross-origin
 requests, and a published page cannot fetch a sibling file.
@@ -19,8 +21,30 @@ HERE = Path(__file__).parent
 ROOT = HERE.parent
 
 
+def codename(name):
+    """A name the league can read and a stranger cannot place.
+
+    First three letters of the surname, then the first two of the first
+    name: "Jane Doe" -> "Doe·Ja". One-word names keep their first three.
+    """
+    words = (name or "").split()
+    if not words:
+        return ""
+    if len(words) == 1:
+        return words[0][:3].title()
+    return f"{words[-1][:3].title()}·{words[0][:2].title()}"
+
+
+def with_codenames(raw):
+    """Add each manager's code name, shown when a team is clicked."""
+    data = json.loads(raw)
+    for manager in data.get("managers", []):
+        manager["alias"] = codename(manager["manager"])
+    return json.dumps(data, separators=(",", ":"))
+
+
 def redact(raw):
-    """Remove managers' real names, keeping everything else intact."""
+    """Remove managers' real names, keeping everything else (code names too)."""
     data = json.loads(raw)
     for manager in data.get("managers", []):
         manager["manager"] = ""
@@ -35,7 +59,7 @@ def redact(raw):
 def main():
     page = HERE.joinpath("page.html").read_text()
     app = HERE.joinpath("app.js").read_text()
-    raw = HERE.joinpath("data.json").read_text()
+    raw = with_codenames(HERE.joinpath("data.json").read_text())
 
     def render(data):
         return (page.replace("__DATA__", data)
@@ -43,7 +67,7 @@ def main():
 
     for path, data, label in (
         (HERE / "index.html", raw, "with names"),
-        (ROOT / "docs" / "index.html", redact(raw), "names removed"),
+        (ROOT / "docs" / "index.html", redact(raw), "names removed, code names kept"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render(data))

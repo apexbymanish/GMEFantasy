@@ -194,10 +194,12 @@ The site is public, so `dashboard/build.py` writes two different pages:
 | File | Data | Where it goes |
 |---|---|---|
 | `dashboard/index.html` | full, **including managers' real names** | local only, git-ignored |
-| `docs/index.html` | same page, real names removed | GitHub Pages |
+| `docs/index.html` | same page, real names removed, code names kept | GitHub Pages |
 
 Team names are pseudonyms the managers chose and are already visible on the
-FPL site; their real names are not. `dashboard/data.json` is git-ignored for
+FPL site; their real names are not. Clicking a team on the public page shows a
+code name instead: the first three letters of the surname, then the first two
+of the first name (Jane Doe -> Doe·Ja). Enough for the league, not for a stranger. `dashboard/data.json` is git-ignored for
 the same reason — regenerate it with `fpl export`.
 
 Payments marked on the public site are stored in each visitor's own browser,

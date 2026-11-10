@@ -19,6 +19,19 @@ let ME = (() => {
 const picked = () => ME != null;
 const myRow = () => D.standings.find(s => s.entry === ME);
 const HAS_NAMES = D.managers.some(m => m.manager);
+/* A manager's code name ("Doe·Ja") stays hidden beside the team name
+   until the team is clicked; a second click hides it again. */
+const ALIAS = Object.fromEntries(D.managers.map(m => [m.entry, m.alias || ""]));
+const aliasTag = entry => ALIAS[entry]
+  ? `<span class="who-tag" data-alias="${esc(ALIAS[entry])}"></span>`
+  : "";
+document.addEventListener("click", e => {
+  const cell = e.target.closest("td.team");
+  const tag = cell && cell.querySelector(".who-tag");
+  if (!tag || e.target.closest("button, a, select")) return;
+  const showing = tag.classList.toggle("open");
+  tag.textContent = showing ? " " + tag.dataset.alias : "";
+});
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
@@ -273,7 +286,7 @@ function renderBump() {
     GWS.map(g => `<th class="r">GW${g}</th>`).join("") + `</tr></thead><tbody>`;
   series.slice().sort((a, b) => a.final - b.final).forEach(t => {
     const mine = D.positions[t.entry] || {};
-    rows += `<tr class="${t.entry === ME ? "me" : ""}"><td class="team">${esc(t.team)}</td>` +
+    rows += `<tr class="${t.entry === ME ? "me" : ""}"><td class="team">${esc(t.team)}${aliasTag(t.entry)}</td>` +
       GWS.map(g => `<td class="r num">${mine[g] == null ? "-" : mine[g]}</td>`).join("") + `</tr>`;
   });
   $("bump-table").innerHTML = rows + `</tbody></table>`;
@@ -300,16 +313,15 @@ function renderGw() {
     (margin ? `, ${margin} clear of ${esc(rows[1].team)}` : "") +
     `. <b>GW</b> is that week; <b>Season</b> is the running total.`;
 
-  let t = `<table><thead><tr><th>#</th><th>Team</th>${HAS_NAMES ? '<th class="col-opt">Manager</th>' : ""}
+  let t = `<table><thead><tr><th>#</th><th>Team</th>
     <th class="r">GW</th><th class="r col-opt">Season</th><th class="r col-opt">Hit</th>
     <th class="r col-opt">Bench</th><th>Captain</th><th class="r">C pts</th></tr></thead><tbody>`;
   rows.forEach(r => {
     const cap = P[r.captain];
     t += `<tr class="${r.entry === ME ? "me" : ""}">
       <td class="rank num">${r.place}</td>
-      <td class="team">${esc(r.team)}${r.place === 1 ? ' <span class="badge win">win</span>' : ""}
+      <td class="team">${esc(r.team)}${aliasTag(r.entry)}${r.place === 1 ? ' <span class="badge win">win</span>' : ""}
         ${r.chip ? `<span class="badge alt">${esc(r.chip)}</span>` : ""}</td>
-      ${HAS_NAMES ? `<td class="col-opt" style="color:var(--ink-3)">${esc(r.manager)}</td>` : ""}
       <td class="r num" style="font-weight:700">${r.points}</td>
       <td class="r num col-opt" style="color:var(--ink-2)">${totals[r.entry] ?? "-"}</td>
       <td class="r num col-opt ${r.hit ? "neg" : "zero"}">${r.hit ? "&minus;" + r.hit : "-"}</td>
@@ -593,7 +605,7 @@ function renderMoney() {
     const paid = paidIds.has(l.id);
     t += `<tr class="${l.entry === ME ? "me" : ""}">
       <td class="rank num">${l.gw}</td>
-      <td class="team">${esc(l.team)}${l.tied ? ' <span class="badge alt">split</span>' : ""}</td>
+      <td class="team">${esc(l.team)}${aliasTag(l.entry)}${l.tied ? ' <span class="badge alt">split</span>' : ""}</td>
       <td class="r num col-opt">${l.points}</td>
       <td class="r krw">${krw(l.amount)}</td>
       <td><button class="btn sm pay ${paid ? "on" : ""}" data-id="${l.id}"
@@ -635,7 +647,7 @@ function renderMoney() {
     <th class="r">Net of entry</th></tr></thead><tbody>`;
   Z.rows.forEach(r => {
     m += `<tr class="${r.entry === ME ? "me" : ""}">
-      <td class="rank num">${r.rank}</td><td class="team">${esc(r.team)}</td>
+      <td class="rank num">${r.rank}</td><td class="team">${esc(r.team)}${aliasTag(r.entry)}</td>
       <td class="r krw col-opt">${r.banked ? krw(r.banked) : "-"}</td>
       <td class="r krw col-opt" style="color:var(--ink-3)">${r.provisional ? krw(r.provisional) : "-"}</td>
       <td class="r krw" style="font-weight:700">${krw(r.projected)}</td>

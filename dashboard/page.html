@@ -156,6 +156,10 @@ td.rank{color:var(--ink-3); width:36px}
 .alert{color:var(--brand); font-weight:600}
 .badge{display:inline-block; font:600 9.5px/1.7 "IBM Plex Mono",monospace; letter-spacing:.07em;
   padding:0 5px; border-radius:3px; text-transform:uppercase; vertical-align:1px}
+.who-tag{font:500 10.5px "IBM Plex Mono",monospace; letter-spacing:.04em; color:var(--ink-3); margin-left:2px}
+td.team:has(.who-tag){cursor:pointer}
+td.team:has(.who-tag):hover{text-decoration:underline dotted var(--ink-3)}
+.who-tag.open{color:var(--ink-2)}
 .badge.win{background:var(--good); color:#fff}
 .badge.alt{background:var(--s2); color:#fff}
 

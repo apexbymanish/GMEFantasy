@@ -99,6 +99,14 @@
       "amount": 3500,
       "status": "paid",
       "on": "2026-11-04"
+    },
+    {
+      "id": "gw10-5950871",
+      "gw": 10,
+      "team": "Falano",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-11-10"
     }
   ]
 }

@@ -238,8 +238,22 @@ td.team:has(.who-tag):hover{text-decoration:underline dotted var(--ink-3)}
   filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
 .kit .shirt-wrap{position:relative; width:54px; margin:0 auto}
 /* Badge on the left chest, where a real crest sits. */
-.kit .crest{position:absolute; left:58%; top:36%; width:22%; height:auto;
-  filter:drop-shadow(0 0 1px rgba(255,255,255,.7))}
+.kit .shirt-wrap .crest{position:absolute; left:59%; top:23%; width:19%; height:auto;
+  filter:drop-shadow(0 0 1px rgba(255,255,255,.6))}
+/* Photos view: headshot on a disc in the club's colour, badge at the corner.
+   A player with no photo falls back to his shirt. */
+.kit .face{display:none; position:relative; width:54px; height:54px; margin:0 auto; border-radius:50%;
+  background:radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--club) 70%, #fff) 0, var(--club) 70%);
+  box-shadow:0 0 0 2px rgba(255,255,255,.85), 0 3px 6px rgba(0,0,0,.35)}
+.kit .face .headshot{position:absolute; left:50%; bottom:0; width:86%; transform:translateX(-50%);
+  border-radius:0 0 999px 999px; clip-path:inset(0 0 0 0 round 0 0 999px 999px)}
+.kit .face .crest{position:absolute; right:-4px; bottom:-2px; width:20px; height:20px; padding:2px;
+  background:#fff; border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.pitch-card.photos .kit .face{display:block}
+.pitch-card.photos .kit .shirt-wrap{display:none}
+.pitch-card.photos .kit.nophoto .face{display:none}
+.pitch-card.photos .kit.nophoto .shirt-wrap{display:block}
+.pitch-card.photos .kit .arm{top:-4px; right:8px}
 .kit .nm{margin-top:3px; font:600 11px/1.25 Archivo,sans-serif; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .kit .pt{margin-top:3px; font:700 12px/1.45 "IBM Plex Mono",monospace; color:var(--kit-ink);
@@ -367,6 +381,8 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
   .kit{width:62px}
   .kit .shirt{width:42px; height:39px}
   .kit .shirt-wrap{width:42px}
+  .kit .face{width:44px; height:44px}
+  .kit .face .crest{width:17px; height:17px}
   .kit .nm{font-size:10px}
   .kit .pt{font-size:10px; padding:0 5px}
   .kit .arm{width:15px; height:15px; line-height:13px; font-size:8px; right:6px}
@@ -456,10 +472,16 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       <section class="block">
         <header class="head-row">
           <div><h2>Line-up</h2><p id="pitch-caption"></p></div>
-          <label class="who-wrap">
-            <span class="sr">Whose line-up</span>
-            <select id="pitch-who" aria-label="Whose line-up"></select>
-          </label>
+          <div class="msg-actions">
+            <div class="seg" id="view-seg" role="group" aria-label="Show shirts or photos">
+              <button data-view="shirts" aria-pressed="true">Shirts</button>
+              <button data-view="photos" aria-pressed="false">Photos</button>
+            </div>
+            <label class="who-wrap">
+              <span class="sr">Whose line-up</span>
+              <select id="pitch-who" aria-label="Whose line-up"></select>
+            </label>
+          </div>
         </header>
         <div class="card pitch-card">
           <div class="pitch" id="pitch"></div>

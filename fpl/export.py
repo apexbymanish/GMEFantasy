@@ -46,6 +46,7 @@ def snapshot(league_id, my_entry, horizon=3, top=8, history=()):
             "team": teams[p["team"]]["short_name"],
             "pos": positions[p["element_type"]],
             "price": p["now_cost"] / 10,
+            "photo": p["code"],   # Premier League photo id
         }
 
     gameweeks = {}

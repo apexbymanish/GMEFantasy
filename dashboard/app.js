@@ -503,10 +503,30 @@ function kit(id, raw, badge, mult, slot) {
     ${slot ? `<span class="slot">${slot}</span>` : ""}
     ${badge ? `<span class="arm ${badge === "V" ? "v" : ""}">${badge}</span>` : ""}
     <div class="shirt-wrap">${shirt(p.team, p.pos === "GKP")}${crest(p.team)}</div>
+    ${p.photo ? `<div class="face" style="--club:${(CLUBS[p.team] || PLAIN)[0]}">
+      <img class="headshot" alt="" loading="lazy" referrerpolicy="no-referrer"
+        src="https://resources.premierleague.com/premierleague25/photos/players/110x140/${p.photo}.png"
+        onerror="this.closest('.kit').classList.add('nophoto')">${crest(p.team)}</div>` : ""}
     <div class="nm">${esc(p.name)}</div>
     <div class="pt">${points}</div>
   </div>`;
 }
+
+/* Shirts or photos: remembered per viewer, shirts if storage is unavailable. */
+let lineupView = "shirts";
+try { lineupView = localStorage.getItem("lineupView") === "photos" ? "photos" : "shirts"; } catch (e) {}
+const viewSeg = $("view-seg");
+const applyView = () => {
+  document.querySelector(".pitch-card").classList.toggle("photos", lineupView === "photos");
+  viewSeg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === lineupView));
+};
+viewSeg.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  lineupView = b.dataset.view;
+  try { localStorage.setItem("lineupView", lineupView); } catch (err) {}
+  applyView();
+});
+applyView();
 
 function renderPitch() {
   const gw = D.gameweeks[activeGw];

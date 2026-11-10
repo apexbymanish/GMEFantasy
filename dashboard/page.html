@@ -240,7 +240,7 @@ td.team:has(.who-tag):hover{text-decoration:underline dotted var(--ink-3)}
 /* Badge on the left chest, where a real crest sits. */
 .kit .shirt-wrap .crest{position:absolute; left:59%; top:23%; width:19%; height:auto;
   filter:drop-shadow(0 0 1px rgba(255,255,255,.6))}
-/* Photos view: headshot on a disc in the club's colour, badge at the corner.
+/* Headshot on a disc in the club's colour, badge at the corner.
    A player with no photo falls back to his shirt. */
 .kit .face{display:none; position:relative; width:54px; height:54px; margin:0 auto; border-radius:50%;
   background:radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--club) 70%, #fff) 0, var(--club) 70%);
@@ -472,18 +472,12 @@ kbd{font:600 11px/1.6 "IBM Plex Mono",monospace; background:var(--surface-2);
       <section class="block">
         <header class="head-row">
           <div><h2>Line-up</h2><p id="pitch-caption"></p></div>
-          <div class="msg-actions">
-            <div class="seg" id="view-seg" role="group" aria-label="Show shirts or photos">
-              <button data-view="shirts" aria-pressed="true">Shirts</button>
-              <button data-view="photos" aria-pressed="false">Photos</button>
-            </div>
-            <label class="who-wrap">
-              <span class="sr">Whose line-up</span>
-              <select id="pitch-who" aria-label="Whose line-up"></select>
-            </label>
-          </div>
+          <label class="who-wrap">
+            <span class="sr">Whose line-up</span>
+            <select id="pitch-who" aria-label="Whose line-up"></select>
+          </label>
         </header>
-        <div class="card pitch-card">
+        <div class="card pitch-card photos">
           <div class="pitch" id="pitch"></div>
           <div class="bench" id="bench"></div>
         </div>

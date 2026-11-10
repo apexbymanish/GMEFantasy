@@ -512,22 +512,6 @@ function kit(id, raw, badge, mult, slot) {
   </div>`;
 }
 
-/* Shirts or photos: remembered per viewer, shirts if storage is unavailable. */
-let lineupView = "shirts";
-try { lineupView = localStorage.getItem("lineupView") === "photos" ? "photos" : "shirts"; } catch (e) {}
-const viewSeg = $("view-seg");
-const applyView = () => {
-  document.querySelector(".pitch-card").classList.toggle("photos", lineupView === "photos");
-  viewSeg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === lineupView));
-};
-viewSeg.addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  lineupView = b.dataset.view;
-  try { localStorage.setItem("lineupView", lineupView); } catch (err) {}
-  applyView();
-});
-applyView();
-
 function renderPitch() {
   const gw = D.gameweeks[activeGw];
   const pts = gw.playerPoints;

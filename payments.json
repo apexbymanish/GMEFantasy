@@ -107,6 +107,14 @@
       "amount": 7000,
       "status": "paid",
       "on": "2026-11-10"
+    },
+    {
+      "id": "gw11-5950871",
+      "gw": 11,
+      "team": "Falano",
+      "amount": 7000,
+      "status": "paid",
+      "on": "2026-11-25"
     }
   ]
 }
